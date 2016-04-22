@@ -1,0 +1,228 @@
+#ifndef OS2_INCLUDED
+   #include <os2.h>
+#endif
+DLGINCLUDE 1 "ids.h"
+
+DLGTEMPLATE ID_MAIN LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "Composite Font Editor", ID_MAIN, 1, 1, 291, 203, WS_VISIBLE,
+            FCF_TASKLIST | FCF_SYSMENU | FCF_TITLEBAR | FCF_MINBUTTON
+    BEGIN
+        CTEXT           "", IDD_STATUS, 3, 180, 285, 10, DT_VCENTER
+        GROUPBOX        "Font family", -1, 3, 127, 285, 51
+        LTEXT           "Name:", -1, 8, 159, 81, 8, DT_VCENTER
+        ENTRYFIELD      "", IDD_FAMILYNAME, 92, 160, 190, 8, ES_MARGIN
+        LTEXT           "Classification:", -1, 8, 146, 68, 8, DT_VCENTER
+        CONTROL         "", IDD_FONTCLASS, 91, 95, 95, 60, WC_COMBOBOX,
+                        LS_HORZSCROLL | CBS_DROPDOWNLIST | WS_GROUP | WS_TABSTOP |
+                        WS_VISIBLE
+        CONTROL         "", IDD_FONTSUBCLASS, 188, 95, 95, 60, WC_COMBOBOX,
+                        LS_HORZSCROLL | CBS_DROPDOWNLIST | WS_GROUP | WS_TABSTOP |
+                        WS_VISIBLE
+        LTEXT           "Registry ID:", -1, 8, 132, 68, 8, DT_VCENTER
+        SPINBUTTON      IDD_REGISTRY, 91, 132, 40, 12, SPBS_NUMERICONLY |
+                        WS_GROUP
+        AUTOCHECKBOX    "Licensed font", IDD_LICENCED, 188, 132, 95, 8
+        GROUPBOX        "Font face", IDD_FACEGROUP, 3, 85, 285, 38
+        LTEXT           "Face name:", IDD_FACETEXT, 8, 104, 76, 8, DT_VCENTER
+        ENTRYFIELD      "", IDD_FACENAME, 92, 105, 189, 8, ES_MARGIN
+        PUSHBUTTON      "~Metrics...", ID_METRICS, 7, 89, 50, 13
+        CONTAINER       IDD_COMPONENTS, 8, 23, 275, 50, CCS_SINGLESEL |
+                        CCS_READONLY | CCS_MINIRECORDCORE | WS_GROUP
+        GROUPBOX        "Component fonts", IDD_GROUPBOX, 3, 3, 285, 78
+        PUSHBUTTON      "~Add...", ID_ADD, 8, 7, 50, 13
+        PUSHBUTTON      "~Edit...", ID_CHANGE, 60, 7, 50, 13, WS_DISABLED
+        PUSHBUTTON      "~Remove", ID_REMOVE, 112, 7, 50, 13, WS_DISABLED
+    END
+END
+
+DLGTEMPLATE IDD_COMPFONT LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "Component Font", IDD_COMPFONT, 1, -19, 195, 207, WS_VISIBLE,
+            FCF_SYSMENU | FCF_TITLEBAR | FCF_CLOSEBUTTON
+    BEGIN
+        LTEXT           "Font:", -1, 3, 193, 28, 8, DT_VCENTER
+        ENTRYFIELD      "", IDD_FONTNAME, 34, 194, 156, 8, ES_MARGIN |
+                        ES_READONLY
+        PUSHBUTTON      "~Select...", IDD_SELECTFONT, 146, 178, 45, 13
+        GROUPBOX        "Glyph ranges", IDD_MMGROUP, 3, 102, 188, 57
+        LISTBOX         IDD_RANGES, 7, 107, 137, 43, LS_NOADJUSTPOS
+        PUSHBUTTON      "~Add...", IDD_ADDRANGE, 147, 136, 40, 13
+        PUSHBUTTON      "~Edit...", IDD_EDITRANGE, 147, 121, 40, 13,
+                        WS_DISABLED
+        PUSHBUTTON      "~Delete", IDD_DELRANGE, 147, 106, 40, 13,
+                        WS_DISABLED
+        LTEXT           "Scaling:", -1, 3, 163, 43, 8, DT_VCENTER
+        CONTROL         "", IDD_SCALING, 49, 128, 142, 44, WC_COMBOBOX,
+                        CBS_DROPDOWNLIST | WS_GROUP | WS_TABSTOP |
+                        WS_VISIBLE
+        CONTAINER       IDD_COMPMETRICS, 8, 36, 178, 53, CCS_SINGLESEL | CCS_MINIRECORDCORE |
+                        WS_GROUP
+        GROUPBOX        "Metric matching", -1, 3, 18, 188, 80
+        CONTROL         "", IDD_MMATCH, 51, 0, 93, 32, WC_COMBOBOX,
+                        CBS_DROPDOWNLIST | WS_GROUP | WS_TABSTOP |
+                        WS_VISIBLE
+        PUSHBUTTON      "A~pply", IDD_MMAPPLY, 147, 21, 40, 13, WS_DISABLED
+        DEFPUSHBUTTON   "OK", DID_OK, 3, 2, 40, 13
+        PUSHBUTTON      "Cancel", DID_CANCEL, 45, 2, 40, 13
+        LTEXT           "Criterion:", -1, 8, 23, 42, 9, DT_VCENTER
+    END
+END
+
+DLGTEMPLATE IDD_GLYPHRANGE LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "Glyph Range", IDD_GLYPHRANGE, 1, 1, 148, 76, WS_VISIBLE,
+            FCF_SYSMENU | FCF_TITLEBAR | FCF_CLOSEBUTTON
+    BEGIN
+        GROUPBOX        "Source font glyphs", -1, 3, 34, 141, 39
+        LTEXT           "First glyph:", -1, 8, 54, 80, 8, DT_BOTTOM
+        SPINBUTTON      IDD_GLYPHSTART, 90, 54, 48, 12, SPBS_NUMERICONLY | SPBS_MASTER | SPBS_JUSTRIGHT | SPBS_FASTSPIN | WS_GROUP
+        LTEXT           "Last glyph:", -1, 8, 41, 80, 8, DT_BOTTOM
+        SPINBUTTON      IDD_GLYPHEND, 90, 41, 48, 12, SPBS_NUMERICONLY | SPBS_MASTER | SPBS_JUSTRIGHT | SPBS_FASTSPIN | WS_GROUP
+        LTEXT           "Target offset:", -1, 3, 20, 84, 8, DT_BOTTOM
+        SPINBUTTON      IDD_GLYPHTARGET, 90, 20, 48, 12, SPBS_NUMERICONLY | SPBS_MASTER | SPBS_JUSTRIGHT | SPBS_FASTSPIN | WS_GROUP
+        DEFPUSHBUTTON   "OK", DID_OK, 3, 2, 40, 13
+        PUSHBUTTON      "Cancel", DID_CANCEL, 45, 2, 40, 13
+    END
+END
+
+DLGTEMPLATE IDD_IMPORT LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "Import Glyphs", IDD_IMPORT, 1, -13, 178, 118, WS_VISIBLE,
+            FCF_SYSMENU | FCF_TITLEBAR | FCF_CLOSEBUTTON
+    BEGIN
+        GROUPBOX        "Source file (.FNT)", -1, 3, 48, 172, 66
+        ENTRYFIELD      "", IDD_IMPFILE, 9, 96, 160, 8, ES_MARGIN |
+                        ES_READONLY
+        PUSHBUTTON      "~Select...", IDD_IMPOPEN, 8, 81, 50, 13
+        LTEXT           "First glyph:", -1, 8, 68, 80, 8, DT_BOTTOM
+        SPINBUTTON      IDD_IMPSTART, 90, 68, 48, 12, SPBS_NUMERICONLY |
+                        SPBS_MASTER | SPBS_JUSTRIGHT | SPBS_FASTSPIN |
+                        WS_GROUP
+        LTEXT           "Number of glyphs:", -1, 8, 55, 80, 8, DT_BOTTOM
+        SPINBUTTON      IDD_IMPEND, 90, 55, 48, 12, SPBS_NUMERICONLY |
+                        SPBS_MASTER | SPBS_JUSTRIGHT | SPBS_FASTSPIN |
+                        WS_GROUP
+        LTEXT           "Target offset:", -1, 3, 35, 84, 8, DT_BOTTOM
+        SPINBUTTON      IDD_IMPTARGET, 90, 35, 48, 12, SPBS_NUMERICONLY |
+                        SPBS_MASTER | SPBS_JUSTRIGHT | SPBS_FASTSPIN |
+                        WS_GROUP
+        DEFPUSHBUTTON   "OK", DID_OK, 3, 2, 40, 13
+        PUSHBUTTON      "Cancel", DID_CANCEL, 45, 2, 40, 13
+        AUTOCHECKBOX    "Apply source file metrics to entire font",
+                        IDD_IMPMETRICS, 3, 20, 171, 10
+    END
+END
+
+DLGTEMPLATE IDD_UNIFONT LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "Uni-Font Properties", IDD_UNIFONT, 5, -21, 248, 243, WS_VISIBLE,
+            FCF_SYSMENU | FCF_TITLEBAR | FCF_CLOSEBUTTON
+    BEGIN
+        LTEXT           "Face name:", -1, 3, 229, 52, 8, DT_VCENTER
+        ENTRYFIELD      "", IDD_UNIFACE, 58, 230, 185, 8, ES_MARGIN
+        GROUPBOX        "Style", -1, 3, 166, 242, 57
+        AUTOCHECKBOX    "Italic", IDD_ITALIC, 8, 206, 58, 8
+        AUTOCHECKBOX    "Underscore", IDD_UNDERSCORE, 8, 197, 58, 8
+        AUTOCHECKBOX    "Negative", IDD_NEGATIVE, 8, 188, 58, 8
+        AUTOCHECKBOX    "Outline", IDD_OUTLINE, 8, 179, 58, 8
+        AUTOCHECKBOX    "Strikeout", IDD_STRIKEOUT, 8, 170, 58, 8
+        LTEXT           "Weight:", -1, 79, 205, 34, 9, DT_VCENTER
+        CONTROL         "", IDD_WEIGHT, 114, 169, 127, 45, WC_COMBOBOX,
+                        CBS_DROPDOWNLIST | WS_GROUP | WS_TABSTOP |
+                        WS_VISIBLE
+        LTEXT           "Width:", -1, 79, 193, 34, 9, DT_VCENTER
+        CONTROL         "", IDD_WIDTH, 114, 157, 127, 45, WC_COMBOBOX,
+                        CBS_DROPDOWNLIST | WS_GROUP | WS_TABSTOP |
+                        WS_VISIBLE
+        AUTOCHECKBOX    "Fixed-width (monospaced) font", IDD_FIXED, 80, 170,
+                        160, 8
+        GROUPBOX        "Dimensions & measurements", -1, 3, 79, 242, 83
+        LTEXT           "Point size:", -1, 8, 145, 72, 8, DT_VCENTER
+        SPINBUTTON      IDD_PTS, 84, 145, 30, 12, SPBS_NUMERICONLY |
+                        SPBS_MASTER | WS_GROUP
+        LTEXT           "Target DPI:", 409, 8, 133, 72, 8, DT_VCENTER
+        SPINBUTTON      IDD_RES, 84, 133, 30, 12, SPBS_NUMERICONLY |
+                        SPBS_MASTER | WS_GROUP
+        LTEXT           "Max increment:", -1, 134, 121, 70, 8, DT_VCENTER
+        SPINBUTTON      IDD_MAXINC, 210, 121, 30, 12, SPBS_NUMERICONLY |
+                        SPBS_MASTER | WS_GROUP
+        LTEXT           "Em square size:", -1, 8, 121, 72, 8, DT_VCENTER
+        LTEXT           "Internal leading:", -1, 134, 145, 70, 8, DT_VCENTER
+        SPINBUTTON      IDD_ILEADING, 210, 145, 30, 12, SPBS_NUMERICONLY |
+                        SPBS_MASTER | WS_GROUP
+        LTEXT           "External leading:", -1, 134, 133, 70, 8, DT_VCENTER
+        SPINBUTTON      IDD_ELEADING, 210, 133, 30, 12, SPBS_NUMERICONLY |
+                        SPBS_MASTER | WS_GROUP
+        LTEXT           "Max ascender:", -1, 8, 109, 72, 8, DT_VCENTER
+        SPINBUTTON      IDD_MAXASC, 84, 109, 30, 12, SPBS_NUMERICONLY |
+                        SPBS_MASTER | WS_GROUP
+        LTEXT           "Max descender:", -1, 8, 97, 72, 8, DT_VCENTER
+        SPINBUTTON      IDD_MAXDESC, 84, 97, 30, 12, SPBS_NUMERICONLY |
+                        SPBS_MASTER | WS_GROUP
+        LTEXT           "X height:", -1, 134, 109, 70, 8, DT_VCENTER
+        SPINBUTTON      IDD_XHEIGHT, 210, 109, 30, 12, SPBS_NUMERICONLY |
+                        SPBS_MASTER | WS_GROUP
+        LTEXT           "L'case ascender:", -1, 134, 97, 70, 8, DT_VCENTER
+        SPINBUTTON      IDD_LOWASC, 210, 97, 30, 12, SPBS_NUMERICONLY |
+                        SPBS_MASTER | WS_GROUP
+        LTEXT           "L'case descender:", -1, 134, 85, 70, 8, DT_VCENTER
+        SPINBUTTON      IDD_LOWDESC, 210, 85, 30, 12, SPBS_NUMERICONLY |
+                        SPBS_MASTER | WS_GROUP
+        LTEXT           "-", IDD_EMSQUARE, 85, 121, 28, 8, DT_VCENTER
+        LTEXT           "Max baseline ext:", -1, 8, 85, 72, 8, DT_VCENTER
+        LTEXT           "-", IDD_MAXBLEX, 85, 85, 28, 8, DT_VCENTER
+        CONTAINER       IDD_UNIGLYPHS, 8, 23, 188, 43, CCS_SINGLESEL | CCS_MINIRECORDCORE | WS_GROUP
+        GROUPBOX        "Font contents", -1, 3, 18, 242, 57
+        PUSHBUTTON      "~Import", IDD_UNIIMPORT, 200, 53, 40, 13
+        PUSHBUTTON      "~Delete", IDD_UNIDELETE, 200, 38, 40, 13
+        DEFPUSHBUTTON   "OK", DID_OK, 3, 2, 40, 13
+        PUSHBUTTON      "Cancel", DID_CANCEL, 45, 2, 40, 13
+    END
+END
+
+DLGTEMPLATE IDD_FONTDLG
+BEGIN
+    DIALOG  "Font", IDD_FONTDLG, 1, 1, 153, 95, FS_NOBYTEALIGN | FS_MOUSEALIGN, FCF_SYSMENU | FCF_TITLEBAR | FCF_CLOSEBUTTON
+    BEGIN
+/* Font dialog controls we actually use */
+        LTEXT           "Name:",                                -1,                 3,   85,  100, 8,   DT_VCENTER
+        COMBOBOX        "",                                     DID_NAME,           3,   2,   147, 82,  NOT CBS_SIMPLE | CBS_DROPDOWNLIST | LS_NOADJUSTPOS
+        LTEXT           "Style:",                               -1,                 3,   64,  100, 8,   DT_VCENTER
+        COMBOBOX        "",                                     DID_STYLE,          3,   17,  147, 46,  NOT CBS_SIMPLE | CBS_DROPDOWNLIST | LS_NOADJUSTPOS
+        DEFPUSHBUTTON   "OK",                                   DID_OK_BUTTON,      3,   2,   40,  12,  WS_GROUP
+        PUSHBUTTON      "Cancel",                               DID_CANCEL_BUTTON,  45,  2,   40,  12,  NOT WS_TABSTOP
+        GROUPBOX        "Sample",                               -1,                 3,   18,  147, 33
+        CTEXT           "abcdABCD",                             DID_SAMPLE,         7,   22,  138, 21,  DT_VCENTER
+                        PRESPARAMS PP_BACKGROUNDCOLOR,          0x00CCCCCCL
+                        PRESPARAMS PP_HILITEBACKGROUNDCOLOR,    0x00CCCCCCL
+                        PRESPARAMS PP_DISABLEDBACKGROUNDCOLOR,  0x00CC00CCL
+/* Standard font dialog controls required by PM but not used by us */
+        COMBOBOX        "",                                     DID_SIZE,           191, 0,   29,  16,  NOT CBS_SIMPLE | CBS_DROPDOWN | NOT WS_VISIBLE
+        AUTOCHECKBOX    "~Display",                             DID_DISPLAY_FILTER, 158, 59,  52,  10,  NOT WS_VISIBLE
+        AUTOCHECKBOX    "~Printer",                             DID_PRINTER_FILTER, 158, 49,  51,  10,  NOT WS_TABSTOP | NOT WS_VISIBLE
+        AUTOCHECKBOX    "Out~line",                             DID_OUTLINE,        158, 39,  42,  10,  NOT WS_VISIBLE
+        AUTOCHECKBOX    "~Underline",                           DID_UNDERSCORE,     158, 29,  46,  10,  NOT WS_TABSTOP | NOT WS_VISIBLE
+        AUTOCHECKBOX    "~Strikeout",                           DID_STRIKEOUT,      158, 19,  47,  10,  NOT WS_TABSTOP | NOT WS_VISIBLE
+    END
+END
+
+DLGTEMPLATE IDD_ABOUT LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "Product Information", IDD_ABOUT, 1, 1, 200, 91, WS_VISIBLE,
+            FCF_SYSMENU | FCF_TITLEBAR | FCF_MINBUTTON
+            PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
+    BEGIN
+        ICON            ID_MAIN, 201, 7, 59, 20, 16
+        DEFPUSHBUTTON   "OK", DID_CANCEL, 38, 2, 40, 12
+        LTEXT           "OS/2 Composite Font Editor", -1, 38, 78, 150, 8
+                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans Bold"
+        LTEXT           "Version 0.1", -1, 38, 70, 150, 8
+        GROUPBOX        "", -1, 38, 66, 157, 4
+        LTEXT           "(C) 2012 Alex Taylor.  All rights reserved.", -1, 38, 54, 157, 8
+        LTEXT           "Released under the terms of the GNU General Public License.", -1, 38, 42, 157, 10
+        LTEXT           "This program comes with ABSOLUTELY NO WARRANTY.  "
+                        "This is free software, and you are welcome to redistribute it under certain conditions; see the file LICENSE for details.",
+                        -1, 38, 16, 156, 25, DT_WORDBREAK
+    END
+END

@@ -1,0 +1,70 @@
+#include <os2.h>
+#include "ids.h"
+
+
+POINTER 1 "program.ico"
+
+
+CODEPAGE 850
+
+
+/* Main menu-bar
+ */
+MENU ID_MAIN
+BEGIN
+    SUBMENU "~File",                            IDM_FILE
+    BEGIN
+        SUBMENU  "~New",                        IDM_NEW
+        BEGIN
+            MENUITEM "~Combined font or alias file\tCtrl-N",    ID_NEWCMB, MIS_TEXT
+            MENUITEM "~Uni-font file\tCtrl-U",                  ID_NEWUNI, MIS_TEXT
+        END
+        MENUITEM "~Open...\tCtrl-O",            ID_OPEN,        MIS_TEXT
+        MENUITEM SEPARATOR
+        MENUITEM "~Save\tCtrl-S",               ID_SAVE,        MIS_TEXT
+        MENUITEM "Save ~as...\tCtrl-A",         ID_SAVEAS,      MIS_TEXT
+        MENUITEM SEPARATOR
+        MENUITEM "Common ~metrics...\tCtrl-M",  ID_METRICS,     MIS_TEXT
+        MENUITEM SEPARATOR
+        MENUITEM "E~xit\tF3",                   ID_EXIT,        MIS_TEXT
+    END
+    SUBMENU "~Component",                       IDM_FONT
+    BEGIN
+        MENUITEM "~Add...",                     ID_ADD,         MIS_TEXT
+        MENUITEM "~Edit...",                    ID_CHANGE,      MIS_TEXT, MIA_DISABLED
+        MENUITEM SEPARATOR
+        MENUITEM "~Remove",                     ID_REMOVE,      MIS_TEXT, MIA_DISABLED
+    END
+    SUBMENU "~Help",                            IDM_HELP
+    BEGIN
+        MENUITEM "~General help\tF1",           ID_HELP,        MIS_TEXT, MIA_DISABLED
+        MENUITEM "~Product information",        ID_ABOUT,       MIS_TEXT
+    END
+END
+
+
+/* The main window acceleration table.
+ */
+ACCELTABLE ID_MAIN
+BEGIN
+    VK_F1,     ID_HELP,        VIRTUALKEY
+    VK_F3,     ID_EXIT,        VIRTUALKEY
+    "n",       ID_NEWCMB,      CHAR, CONTROL
+    "N",       ID_NEWCMB,      CHAR, CONTROL
+    "u",       ID_NEWUNI,      CHAR, CONTROL
+    "U",       ID_NEWUNI,      CHAR, CONTROL
+    "o",       ID_OPEN,        CHAR, CONTROL
+    "O",       ID_OPEN,        CHAR, CONTROL
+    "s",       ID_SAVE,        CHAR, CONTROL
+    "S",       ID_SAVE,        CHAR, CONTROL
+    "a",       ID_SAVEAS,      CHAR, CONTROL
+    "A",       ID_SAVEAS,      CHAR, CONTROL
+    "m",       ID_METRICS,     CHAR, CONTROL
+    "M",       ID_METRICS,     CHAR, CONTROL
+END
+
+
+/* Dialog resources.
+ */
+RCINCLUDE dialog.dlg
+
