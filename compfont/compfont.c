@@ -613,14 +613,14 @@ MRESULT EXPENTRY CompFontDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
             // Set up the container
             hwndCnr = WinWindowFromID( hwnd, IDD_COMPMETRICS );
             memset( &cnr, 0, sizeof( CNRINFO ));
-            cnr.flWindowAttr  = CV_DETAIL;
-            cnr.pszCnrTitle   = "Metric Flags";
+            cnr.flWindowAttr  = CV_DETAIL | CA_DETAILSVIEWTITLES;
+            cnr.pszCnrTitle   = "Component Metrics";
             cnr.cyLineSpacing = 1;
             WinSendMsg( hwndCnr, CM_SETCNRINFO, MPFROMP( &cnr ),
                         MPFROMLONG( CMA_FLWINDOWATTR | CMA_LINESPACING ));
             pFld = (PFIELDINFO) WinSendMsg( hwndCnr,
                                             CM_ALLOCDETAILFIELDINFO,
-                                            MPFROMLONG( 2L ), 0 );
+                                            MPFROMLONG( 3L ), 0 );
             pFld1st = pFld;
             // (first column: font metric item name)
             pFld->cb = sizeof( FIELDINFO );
@@ -628,16 +628,22 @@ MRESULT EXPENTRY CompFontDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
             pFld->flData     = CFA_STRING | CFA_FIREADONLY | CFA_VCENTER | CFA_HORZSEPARATOR | CFA_SEPARATOR;
             pFld->offStruct  = FIELDOFFSET( CMRECORD, pszMetric );
             pFld = pFld->pNextFieldInfo;
-            // (second column: font information item value)
+            // (second column: font metric flag value)
             pFld->cb = sizeof( FIELDINFO );
-            pFld->pTitleData = "Match Setting";
-            pFld->flData     = CFA_STRING | CFA_FIREADONLY | CFA_VCENTER | CFA_HORZSEPARATOR;
+            pFld->pTitleData = "Requirement";
+            pFld->flData     = CFA_STRING | CFA_FIREADONLY | CFA_VCENTER | CFA_HORZSEPARATOR | CFA_SEPARATOR;
             pFld->offStruct  = FIELDOFFSET( CMRECORD, pszFlag );
+            pFld = pFld->pNextFieldInfo;
+            // (third column: font metric item value)
+            pFld->cb = sizeof( FIELDINFO );
+            pFld->pTitleData = "Current Value";
+            pFld->flData     = CFA_STRING | CFA_FIREADONLY | CFA_VCENTER | CFA_HORZSEPARATOR;
+            pFld->offStruct  = FIELDOFFSET( CMRECORD, pszValue );
 
             fi.cb                   = (ULONG) sizeof( FIELDINFOINSERT );
             fi.pFieldInfoOrder      = (PFIELDINFO) CMA_END;
             fi.fInvalidateFieldInfo = TRUE;
-            fi.cFieldInfoInsert     = 2;
+            fi.cFieldInfoInsert     = 3;
             WinSendMsg( hwndCnr, CM_INSERTDETAILFIELDINFO,
                         MPFROMP( pFld1st ), MPFROMP( &fi ));
             PopulateMetricFlags( hwndCnr, pProps );
@@ -872,6 +878,7 @@ MRESULT EXPENTRY CompFontDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
             while ( pRec ) {
                 free( pRec->pszMetric );
                 free( pRec->pszFlag );
+                free( pRec->pszValue );
                 pRec = (PCMRECORD) pRec->record.preccNextRecord;
             }
             WinSendMsg( hwnd, CM_REMOVERECORD, MPVOID,
@@ -1474,15 +1481,16 @@ void PopulateMetricFlags( HWND hwndCnr, PCFPROPS pProps )
     pFirst = pRec;
     ulCB = sizeof( MINIRECORDCORE );
 
-    /* The first 48 values are sequential byte fields in the ifi32mbr
-     * structure, so we can just cast the structure to an array and loop
-     * through.  The corresponding description strings are defined in the
-     * global array g_MetricItems[] to facilitate this.
+    /* The first 48 flag values are sequential byte fields in the ifi32mbr
+     * structure, so we can cast the structure to an array and loop through.
+     * The corresponding description strings are defined in the global array
+     * g_MetricItems[] to facilitate this.
      */
     fbMetricFields = (PBYTE)(&(pProps->pCFA->unimbr.ifi32mbr));
     for ( i = 0; i < 48; i++ ) {
         pRec->pszMetric = (PSZ) malloc( SZMETRIC_MAX );
         pRec->pszFlag   = (PSZ) malloc( SZFLAGS_MAXZ );
+        pRec->pszValue  = (PSZ) malloc( SZMETRICVAL_MAX );
         pRec->fb        = fbMetricFields[ i ];
         strcpy( pRec->pszMetric, g_MetricItems[ i ] );
         switch ( fbMetricFields[ i ] ) {
@@ -1497,6 +1505,58 @@ void PopulateMetricFlags( HWND hwndCnr, PCFPROPS pProps )
             default:
                 sprintf( pRec->pszFlag, "0x%08X", fbMetricFields[ i ] ); break;
         }
+        // Now copy the actual value from the corresponding IFIMETRICS32
+        switch ( i ) {
+            case  0: strncpy( pRec->pszValue, pProps->pCFA->unifm.ifiMetrics.szFamilyname,    SZMETRICVAL_MAX ); break;
+            case  1: strncpy( pRec->pszValue, pProps->pCFA->unifm.ifiMetrics.szFacename,      SZMETRICVAL_MAX ); break;
+            case  2: strncpy( pRec->pszValue, pProps->pCFA->unifm.ifiMetrics.szGlyphlistName, SZMETRICVAL_MAX ); break;
+            case  3: sprintf( pRec->pszValue, "%u", pProps->pCFA->unifm.ifiMetrics.idRegistry ); break;
+            case  4: sprintf( pRec->pszValue, "%d", pProps->pCFA->unifm.ifiMetrics.lCapEmHeight ); break;
+            case  5: sprintf( pRec->pszValue, "%d", pProps->pCFA->unifm.ifiMetrics.lXHeight ); break;
+            case  6: sprintf( pRec->pszValue, "%d", pProps->pCFA->unifm.ifiMetrics.lMaxAscender ); break;
+            case  7: sprintf( pRec->pszValue, "%d", pProps->pCFA->unifm.ifiMetrics.lMaxDescender ); break;
+            case  8: sprintf( pRec->pszValue, "%d", pProps->pCFA->unifm.ifiMetrics.lLowerCaseAscent ); break;
+            case  9: sprintf( pRec->pszValue, "%d", pProps->pCFA->unifm.ifiMetrics.lLowerCaseDescent ); break;
+            case 10: sprintf( pRec->pszValue, "%d", pProps->pCFA->unifm.ifiMetrics.lInternalLeading ); break;
+            case 11: sprintf( pRec->pszValue, "%d", pProps->pCFA->unifm.ifiMetrics.lExternalLeading ); break;
+            case 12: sprintf( pRec->pszValue, "%d", pProps->pCFA->unifm.ifiMetrics.lAveCharWidth ); break;
+            case 13: sprintf( pRec->pszValue, "%d", pProps->pCFA->unifm.ifiMetrics.lMaxCharInc ); break;
+            case 14: sprintf( pRec->pszValue, "%d", pProps->pCFA->unifm.ifiMetrics.lEmInc ); break;
+            case 15: sprintf( pRec->pszValue, "%d", pProps->pCFA->unifm.ifiMetrics.lMaxBaselineExt ); break;
+            case 16: sprintf( pRec->pszValue, "%d", pProps->pCFA->unifm.ifiMetrics.fxCharSlope ); break;
+            case 17: sprintf( pRec->pszValue, "%d", pProps->pCFA->unifm.ifiMetrics.fxInlineDir ); break;
+            case 18: sprintf( pRec->pszValue, "%d", pProps->pCFA->unifm.ifiMetrics.fxCharRot ); break;
+            case 19: sprintf( pRec->pszValue, "%u", pProps->pCFA->unifm.ifiMetrics.ulWeightClass ); break;
+            case 20: sprintf( pRec->pszValue, "%u", pProps->pCFA->unifm.ifiMetrics.ulWidthClass ); break;
+            case 21: sprintf( pRec->pszValue, "%d", pProps->pCFA->unifm.ifiMetrics.lEmSquareSizeX ); break;
+            case 22: sprintf( pRec->pszValue, "%d", pProps->pCFA->unifm.ifiMetrics.lEmSquareSizeY ); break;
+            case 23: sprintf( pRec->pszValue, "%u", pProps->pCFA->unifm.ifiMetrics.giFirstChar ); break;
+            case 24: sprintf( pRec->pszValue, "%u", pProps->pCFA->unifm.ifiMetrics.giLastChar ); break;
+            case 25: sprintf( pRec->pszValue, "%u", pProps->pCFA->unifm.ifiMetrics.giDefaultChar ); break;
+            case 26: sprintf( pRec->pszValue, "%u", pProps->pCFA->unifm.ifiMetrics.giBreakChar ); break;
+            case 27: sprintf( pRec->pszValue, "%u", pProps->pCFA->unifm.ifiMetrics.ulNominalPointSize ); break;
+            case 28: sprintf( pRec->pszValue, "%u", pProps->pCFA->unifm.ifiMetrics.ulMinimumPointSize ); break;
+            case 29: sprintf( pRec->pszValue, "%u", pProps->pCFA->unifm.ifiMetrics.ulMaximumPointSize ); break;
+            case 30: sprintf( pRec->pszValue, "0x%08X", pProps->pCFA->unifm.ifiMetrics.flType ); break;
+            case 31: sprintf( pRec->pszValue, "0x%08X", pProps->pCFA->unifm.ifiMetrics.flDefn ); break;
+            case 32: sprintf( pRec->pszValue, "0x%08X", pProps->pCFA->unifm.ifiMetrics.flSelection ); break;
+            case 33: sprintf( pRec->pszValue, "%X", pProps->pCFA->unifm.ifiMetrics.flCapabilities ); break;
+            case 34: sprintf( pRec->pszValue, "%d", pProps->pCFA->unifm.ifiMetrics.lSubscriptXSize ); break;
+            case 35: sprintf( pRec->pszValue, "%d", pProps->pCFA->unifm.ifiMetrics.lSubscriptYSize ); break;
+            case 36: sprintf( pRec->pszValue, "%d", pProps->pCFA->unifm.ifiMetrics.lSubscriptXOffset ); break;
+            case 37: sprintf( pRec->pszValue, "%d", pProps->pCFA->unifm.ifiMetrics.lSubscriptYOffset ); break;
+            case 38: sprintf( pRec->pszValue, "%d", pProps->pCFA->unifm.ifiMetrics.lSuperscriptXSize ); break;
+            case 39: sprintf( pRec->pszValue, "%d", pProps->pCFA->unifm.ifiMetrics.lSuperscriptYSize ); break;
+            case 40: sprintf( pRec->pszValue, "%d", pProps->pCFA->unifm.ifiMetrics.lSuperscriptXOffset ); break;
+            case 41: sprintf( pRec->pszValue, "%d", pProps->pCFA->unifm.ifiMetrics.lSuperscriptYOffset ); break;
+            case 42: sprintf( pRec->pszValue, "%d", pProps->pCFA->unifm.ifiMetrics.lUnderscoreSize ); break;
+            case 43: sprintf( pRec->pszValue, "%d", pProps->pCFA->unifm.ifiMetrics.lUnderscorePosition ); break;
+            case 44: sprintf( pRec->pszValue, "%d", pProps->pCFA->unifm.ifiMetrics.lStrikeoutSize ); break;
+            case 45: sprintf( pRec->pszValue, "%d", pProps->pCFA->unifm.ifiMetrics.lStrikeoutPosition ); break;
+            case 46: sprintf( pRec->pszValue, "%u", pProps->pCFA->unifm.ifiMetrics.ulKerningPairs ); break;
+            case 47: sprintf( pRec->pszValue, "%u", pProps->pCFA->unifm.ifiMetrics.ulFontClass ); break;
+            default: sprintf( pRec->pszValue, ""); break;
+        }
         pRec->record.cb = ulCB;
         pRec->record.pszIcon = pRec->pszMetric;
         pRec = (PCMRECORD) pRec->record.preccNextRecord;
@@ -1505,6 +1565,7 @@ void PopulateMetricFlags( HWND hwndCnr, PCFPROPS pProps )
     // The last three values are directly in the unimbr structure...
     pRec->pszMetric = (PSZ) malloc( SZMETRIC_MAX );
     pRec->pszFlag   = (PSZ) malloc( SZFLAGS_MAXZ );
+    pRec->pszValue  = (PSZ) malloc( SZMETRICVAL_MAX );
     pRec->fb        = pProps->pCFA->unimbr.fbPanose;
     strcpy( pRec->pszMetric, "Panose table");
     switch ( pProps->pCFA->unimbr.fbPanose ) {
@@ -1516,12 +1577,26 @@ void PopulateMetricFlags( HWND hwndCnr, PCFPROPS pProps )
                                          pProps->pCFA->unimbr.fbPanose );
                                 break;
     }
+    sprintf( pRec->pszValue, "{%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,0x%X,0x%X}",
+                             pProps->pCFA->unifm.panose[0],
+                                  pProps->pCFA->unifm.panose[1],
+                                  pProps->pCFA->unifm.panose[2],
+                                  pProps->pCFA->unifm.panose[3],
+                                  pProps->pCFA->unifm.panose[4],
+                                  pProps->pCFA->unifm.panose[5],
+                                  pProps->pCFA->unifm.panose[6],
+                                  pProps->pCFA->unifm.panose[7],
+                                  pProps->pCFA->unifm.panose[8],
+                                  pProps->pCFA->unifm.panose[9],
+                                  pProps->pCFA->unifm.panose[10],
+                                  pProps->pCFA->unifm.panose[11] );
     pRec->record.cb = ulCB;
     pRec->record.pszIcon = pRec->pszMetric;
     pRec = (PCMRECORD) pRec->record.preccNextRecord;
 
     pRec->pszMetric = (PSZ) malloc( SZMETRIC_MAX );
     pRec->pszFlag   = (PSZ) malloc( SZFLAGS_MAXZ );
+    pRec->pszValue  = (PSZ) malloc( SZMETRICVAL_MAX );
     pRec->fb        = pProps->pCFA->unimbr.fbFullFamilyname;
     strcpy( pRec->pszMetric, "Full family name");
     switch ( pProps->pCFA->unimbr.fbFullFamilyname ) {
@@ -1533,12 +1608,14 @@ void PopulateMetricFlags( HWND hwndCnr, PCFPROPS pProps )
                                          pProps->pCFA->unimbr.fbFullFamilyname );
                                 break;
     }
+    strncpy( pRec->pszValue, pProps->pCFA->unifm.szFullFamilyname, SZMETRICVAL_MAX-1 );
     pRec->record.cb = ulCB;
     pRec->record.pszIcon = pRec->pszMetric;
     pRec = (PCMRECORD) pRec->record.preccNextRecord;
 
     pRec->pszMetric = (PSZ) malloc( SZMETRIC_MAX );
     pRec->pszFlag   = (PSZ) malloc( SZFLAGS_MAXZ );
+    pRec->pszValue  = (PSZ) malloc( SZMETRICVAL_MAX );
     pRec->fb        = pProps->pCFA->unimbr.fbFullFacename;
     strcpy( pRec->pszMetric, "Full face name");
     switch ( pProps->pCFA->unimbr.fbFullFacename ) {
@@ -1550,6 +1627,7 @@ void PopulateMetricFlags( HWND hwndCnr, PCFPROPS pProps )
                                          pProps->pCFA->unimbr.fbFullFacename );
                                 break;
     }
+    strncpy( pRec->pszValue, pProps->pCFA->unifm.szFullFacename, SZMETRICVAL_MAX-1 );
     pRec->record.cb = ulCB;
     pRec->record.pszIcon = pRec->pszMetric;
     pRec = (PCMRECORD) pRec->record.preccNextRecord;

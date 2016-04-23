@@ -139,7 +139,8 @@
 #define SZERR_MAXZ                  255     // length of an error string
 #define SZRANGES_MAXZ               100     // length of a glyph-ranges string
 #define SZFLAGS_MAXZ                50      // length of scaling-flags string
-#define SZMETRIC_MAX                50      //
+#define SZMETRIC_MAX                50      // length of a metric name
+#define SZMETRICVAL_MAX             100     // length of a metric value
 
 /* Encoding type for bEncoding field in GRDATA structure
  */
@@ -219,12 +220,13 @@ typedef struct _uni_font_ranges {
 } UFRECORD, *PUFRECORD;
 
 
-// Record structure for the metric-flags container
+// Record structure for the component metrics container
 typedef struct _metric_flags_record {
     MINIRECORDCORE record;                  // standard data (short version)
     PSZ            pszMetric,               // font face name field
-                   pszFlag;                 // flags field
-    BYTE           fb;                      // flag value (not displayed)
+                   pszFlag,                 // flags field (human-readable)
+                   pszValue;                // metric value field
+    BYTE           fb;                      // numeric flag value (not displayed)
 } CMRECORD, *PCMRECORD;
 
 
@@ -299,23 +301,55 @@ typedef struct _Global_Data {
 // GLOBAL VARIABLES
 
 // Font metric container field description strings
-PSZ g_MetricItems[] = {
-    "Family name",              "Face name",                "Glyphlist",
-    "IBM registered ID",        "Em height",                "X height",
-    "Max ascender",             "Max descender",            "Lowercase ascent",
-    "Lowercase descent",        "Internal leading",         "External leading",
-    "Average character width",  "Max character increment",  "Em increment",
-    "Max baseline extent",      "Character slope",          "Inline direction",
-    "Character rotation",       "Weight class",             "Width class",
-    "X resolution",             "Y resolution",             "First character",
-    "Last character",           "Default character",        "Break character",
-    "Nominal point size",       "Minimum point size",       "Maximum point size",
-    "Type flags",               "Definition flags",         "Selection flags",
-    "Font capabilities",        "Subscript size X",         "Subscript size Y",
-    "Subscript offset X",       "Subscript offset Y",       "Superscript size X",
-    "Superscript size Y",       "Superscript offset X",     "Superscript offset Y",
-    "Underscore size",          "Underscore position",      "Strikeout size",
-    "Strikeout position",       "Kerning pairs",            "Font class"
+PSZ g_MetricItems[] = {         // corresponding field in IFIMETRICS32
+    "Family name",              // 0  (UCHAR[FACESIZE])
+    "Face name",                // 1  (UCHAR[FACESIZE])
+    "Glyphlist",                // 2  (UCHAR[GLYPHNAMESIZE])
+    "IBM registered ID",        // 3  (ULONG)
+    "Em height",                // 4  (LONG)
+    "X height",                 // 5  (LONG)
+    "Max ascender",             // 6  (LONG)
+    "Max descender",            // 7  (LONG)
+    "Lowercase ascent",         // 8  (LONG)
+    "Lowercase descent",        // 9  (LONG)
+    "Internal leading",         // 10 (LONG)
+    "External leading",         // 11 (LONG)
+    "Average character width",  // 12 (LONG)
+    "Max character increment",  // 13 (LONG)
+    "Em increment",             // 14 (LONG)
+    "Max baseline extent",      // 15 (LONG)
+    "Character slope",          // 16 (FIXED)
+    "Inline direction",         // 17 (FIXED)
+    "Character rotation",       // 18 (FIXED)
+    "Weight class",             // 19 (ULONG)
+    "Width class",              // 20 (ULONG)
+    "X resolution",             // 21 (LONG)
+    "Y resolution",             // 22 (LONG)
+    "First character",          // 23 (GLYPH)
+    "Last character",           // 24 (GLYPH)
+    "Default character",        // 25 (GLYPH)
+    "Break character",          // 26 (GLYPH)
+    "Nominal point size",       // 27 (ULONG)
+    "Minimum point size",       // 28 (ULONG)
+    "Maximum point size",       // 29 (ULONG)
+    "Type flags",               // 30 (ULONG)
+    "Definition flags",         // 31 (ULONG)
+    "Selection flags",          // 32 (ULONG)
+    "Font capabilities",        // 33 (ULONG)
+    "Subscript size X",         // 34 (LONG)
+    "Subscript size Y",         // 35 (LONG)
+    "Subscript offset X",       // 36 (LONG)
+    "Subscript offset Y",       // 37 (LONG)
+    "Superscript size X",       // 38 (LONG)
+    "Superscript size Y",       // 39 (LONG)
+    "Superscript offset X",     // 40 (LONG)
+    "Superscript offset Y",     // 41 (LONG)
+    "Underscore size",          // 42 (LONG)
+    "Underscore position",      // 43 (LONG)
+    "Strikeout size",           // 44 (LONG)
+    "Strikeout position",       // 45 (LONG)
+    "Kerning pairs",            // 46 (ULONG)
+    "Font class"                // 47 (ULONG)
 };
 
 // Font family class names

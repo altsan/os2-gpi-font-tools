@@ -58,7 +58,7 @@ BEGIN
                         WS_VISIBLE
         CONTAINER       IDD_COMPMETRICS, 8, 36, 178, 53, CCS_SINGLESEL | CCS_MINIRECORDCORE |
                         WS_GROUP
-        GROUPBOX        "Metric matching", -1, 3, 18, 188, 80
+        GROUPBOX        "Metrics", -1, 3, 18, 188, 80
         CONTROL         "", IDD_MMATCH, 51, 0, 93, 32, WC_COMBOBOX,
                         CBS_DROPDOWNLIST | WS_GROUP | WS_TABSTOP |
                         WS_VISIBLE
@@ -219,10 +219,10 @@ BEGIN
                         PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans Bold"
         LTEXT           "Version 0.1", -1, 38, 70, 150, 8
         GROUPBOX        "", -1, 38, 66, 157, 4
-        LTEXT           "(C) 2012 Alex Taylor.  All rights reserved.", -1, 38, 54, 157, 8
+        LTEXT           "(C) 2016 Alex Taylor.  All rights reserved.", -1, 38, 54, 157, 8
         LTEXT           "Released under the terms of the GNU General Public License.", -1, 38, 42, 157, 10
         LTEXT           "This program comes with ABSOLUTELY NO WARRANTY.  "
-                        "This is free software, and you are welcome to redistribute it under certain conditions; see the file LICENSE for details.",
+                        "This is free software, and you are welcome to redistribute it under certain conditions; see the file COPYING for details.",
                         -1, 38, 16, 156, 25, DT_WORDBREAK
     END
 END
