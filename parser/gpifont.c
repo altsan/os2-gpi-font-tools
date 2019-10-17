@@ -16,32 +16,11 @@
  * #define DEBUG_DUMP_RESOURCE
  */
 
-
-/* Some standard type definitions...
- */
-typedef unsigned char  UCHAR,  *PUCHAR;
-typedef unsigned long  ULONG,  *PULONG;
-typedef unsigned short USHORT, *PUSHORT;
-typedef unsigned char  BYTE,   *PBYTE;
-typedef char                   *PSZ;
-typedef char           CHAR,   *PCHAR;
-typedef long           LONG,   *PLONG;
-typedef short          SHORT,  *PSHORT;
-typedef unsigned long  BOOL,   *PBOOL;
-typedef void                   *PVOID;
-
-#ifndef FALSE
-   #define FALSE   0
-#endif
-#ifndef TRUE
-   #define TRUE    1
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
-
+#include "otypes.h"
 #include "gpifont.h"
 #include "pmugl.h"
 #include "os2res.h"

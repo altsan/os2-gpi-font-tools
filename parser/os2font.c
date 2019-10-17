@@ -1,26 +1,8 @@
-/* Standard types normally defined in the OS/2 headers...
- */
-typedef unsigned char  UCHAR,  *PUCHAR;
-typedef unsigned long  ULONG,  *PULONG;
-typedef unsigned short USHORT, *PUSHORT;
-typedef unsigned char  BYTE,   *PBYTE;      /* (changed to unsigned) */
-typedef char                   *PSZ;
-typedef char           CHAR,   *PCHAR;
-typedef long           LONG,   *PLONG;
-typedef short          SHORT,  *PSHORT;
-typedef unsigned long  BOOL,   *PBOOL;
-typedef void                   *PVOID;
-
-#ifndef FALSE
-   #define FALSE   0
-#endif
-#ifndef TRUE
-   #define TRUE    1
-#endif
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "otypes.h"
 #include "gpifont.h"
 
 

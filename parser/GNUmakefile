@@ -8,5 +8,4 @@ os2font :	$(OBJS)
 
 clean :
 		rm -f $(OBJS)
-		rm -f os2font.exe
-
+		rm -f os2font os2font.exe
