@@ -82,7 +82,7 @@ int main( int argc, char *argv[] )
                     resource = 0;
             }
             else if ( tolower( *pszArg ) == 'd') {
-                if ( !sscanf( pszArg+1, ":%u", &dpi ))
+                if ( !sscanf( pszArg+1, ":%hu", &dpi ))
                     dpi = 0;
             }
 
@@ -91,7 +91,7 @@ int main( int argc, char *argv[] )
                   !sscanf( pszArg, "U%x", &number ) &&
                   !sscanf( pszArg, "%i",  &number )    )
         {
-            fprintf( stderr, "%s is not a recognized glyph number.\n", pszArg, number );
+            fprintf( stderr, "%s is not a recognized glyph number.\n", pszArg );
             number = 0;
         }
     }
@@ -506,5 +506,4 @@ BOOL write_font( OS2FONTRESOURCE font, ULONG count, USHORT dpi, PSZ pszFileName 
     printf("File saved.\n");
 
     return TRUE;
-}
-
+}
