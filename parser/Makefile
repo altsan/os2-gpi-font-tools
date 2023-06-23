@@ -1,6 +1,6 @@
 CC      = gcc
 INCDIR  = ../include
-CFLAGS  = -Zomf -Zexe -g -I$(INCDIR)
+CFLAGS  = -Zomf -Zexe -I$(INCDIR)
 OBJS    = os2font.o gpifont.o
 
 os2font :	$(OBJS)
