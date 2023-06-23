@@ -6,7 +6,7 @@
  *  aim is to be as platform-independent as possible, so OS/2-specific APIs  *
  *  are avoided.                                                             *
  *                                                                           *
- *  (C) 2012 Alexander Taylor                                                *
+ *  (C) 2012,2023 Alexander Taylor                                           *
  *                                                                           *
  *  This code is placed in the public domain.                                *
  *                                                                           *
