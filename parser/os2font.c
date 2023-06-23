@@ -1,4 +1,5 @@
 /*****************************************************************************
+ *                                                                           *
  * os2font.c                                                                 *
  *                                                                           *
  * Program to parse an OS/2 GPI-format bitmap font and do various things     *
@@ -43,7 +44,23 @@ int main( int argc, char *argv[] )
 
     /* parse command-line arguments */
     if ( argc < 2 ) {
-        printf("Syntax:\nOS2FONT <filename> [/F:<font>] [/O:<filename>] [/D:<dpi>] [/I] [<number>]\n");
+        printf("OS2FONT <input file> [/F:<n>] [/O:<filename>] [/D:<96|120>] [/I] [<number>]\n\n");
+        printf("<input file>   OS/2-GPI font file to parse; this can be any of the following:\n");
+        printf("                - A plain FNT file (as output by the toolkit Font Editor)\n");
+        printf("                - A font resource DLL (usually with the .FON extension)\n");
+        printf("                - A program DLL (LX or NE format) containing font reources.\n\n");
+        printf("/D:<96|120>    If /O is specified, force the output font's DPI to 96 or 120.\n\n");
+        printf("/F:<n>         Where multiple fonts exist in the file, extract the <n>th font\n");
+        printf("               found, counted from 0 (the default behaviour is /F:0).\n\n");
+        printf("/I             Interpret <number> as a UGL glyph index, instead of a Unicode\n");
+        printf("               codepoint (ignored if /O is specified).\n\n");
+        printf("/O:<filename>  Write the parsed font resource into <filename>.\n\n");
+        printf("<number>       If /O is specified, indicates the number of glyphs (starting\n");
+        printf("               from the first in the font) to copy into the output file.\n");
+        printf("               If /O is not specified, identifies a font character to preview\n");
+        printf("               on-screen.  May be specified in decimal or (if prefixed by 'U'\n");
+        printf("               or '0x') in hexadecimal; in either case it is interpreted as a\n");
+        printf("               Unicode codepoint unless /I or /O is used.\n");
         return 0;
     }
     pszFile = argv[1];
@@ -70,8 +87,13 @@ int main( int argc, char *argv[] )
             }
 
         }
-        else if ( !sscanf( pszArg, "%x", &number ) || !sscanf( pszArg, "%u", &number ))
+        else if ( !sscanf( pszArg, "u%x", &number ) &&
+                  !sscanf( pszArg, "U%x", &number ) &&
+                  !sscanf( pszArg, "%i",  &number )    )
+        {
+            fprintf( stderr, "%s is not a recognized glyph number.\n", pszArg, number );
             number = 0;
+        }
     }
 
     /* try to parse a font from the file */
@@ -79,23 +101,23 @@ int main( int argc, char *argv[] )
     if ( error ) {
         switch ( error ) {
             case ERR_FILE_OPEN:
-                printf("The file %s could not be opened.\n", pszFile );
+                fprintf( stderr, "The file %s could not be opened.\n", pszFile );
                 break;
             case ERR_FILE_STAT:
             case ERR_FILE_READ:
-                printf("Failed to read file %s.\n", pszFile );
+                fprintf( stderr, "Failed to read file %s.\n", pszFile );
                 break;
             case ERR_FILE_FORMAT:
-                printf("The file %s does not contain a valid font.\n", pszFile );
+                fprintf( stderr, "The file %s does not contain a valid font.\n", pszFile );
                 break;
             case ERR_NO_FONT:
-                printf("The requested font number was not found in %s\n", pszFile );
+                fprintf( stderr, "The requested font number was not found in %s\n", pszFile );
                 break;
             case ERR_MEMORY:
-                printf("A memory allocation error occurred.\n");
+                fprintf( stderr, "A memory allocation error occurred.\n");
                 break;
             default:
-                printf("An unknown error occurred.\n");
+                fprintf( stderr, "An unknown error occurred.\n");
                 break;
         }
         return error;
@@ -174,7 +196,7 @@ void show_glyph( ULONG ulOffset, POS2FONTRESOURCE pFont )
     USHORT      i, j, k;
 
     if ( ! ExtractOS2FontGlyph( ulOffset, pFont, &glyph )) {
-        printf("Failed to extract glyph bitmap.\n");
+        fprintf( stderr, "Failed to extract glyph bitmap.\n");
         return;
     }
 
