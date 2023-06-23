@@ -109,7 +109,7 @@ BOOL ExtractOS2FontGlyph( ULONG ulIndex, POS2FONTRESOURCE pFont, PGLYPHBITMAP pG
 
     // Map index 0 to the default/substitution glyph
     if ( ulIndex == 0 )
-        ulIndex = pFont->pMetrics->usDefaultChar;
+        ulIndex = pFont->pMetrics->usFirstChar + pFont->pMetrics->usDefaultChar;
 
     // Make sure our index actually falls within the range contained in the font
     if (( ulIndex < pFont->pMetrics->usFirstChar ) ||
@@ -565,9 +565,9 @@ ULONG OS2FontGlyphIndex( POS2FONTRESOURCE pFont, ULONG index )
  * On successful return, the fields within the OS2FONTRESOURCE structure     *
  * will point to the appropriate structures within the font file data.       *
  *                                                                           *
- * NOTE: Even if this function returns success, the pPanose and pEnd fields  *
- * of the pFont structure may be NULL.  The application must check for this  *
- * if it intends to use these fields.                                        *
+ * NOTE: Even if this function returns success, the pPanose, pKerning and    *
+ * pEnd fields of the pFont structure may be NULL.  The application must     *
+ * check for this if it intends to use these fields.                         *
  *                                                                           *
  * ARGUMENTS:                                                                *
  *   PVOID            pBuffer : Buffer containing the font resource data.(I) *
@@ -727,7 +727,7 @@ ULONG ReadOS2FontResource( PSZ pszFile, ULONG ulFace, PULONG pulCount, POS2FONTR
     ULONG       ulAddr,         // address of the new-style EXE header
                 ulFaceCount,    // number of faces found
                 ulResID,        // target resource ID (when fontdir is used)
-                cbFont,         // size of found font resource
+                cbFont = 0,     // size of found font resource
                 cbInc,          // offset increment of current resource entry
                 i,
                 ulRC;
