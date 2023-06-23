@@ -18,7 +18,7 @@ information.  It can also preview a specific character glyph from the font by
 printing it to the terminal as an ASCII-simulated bitmap.  It has the ability 
 to copy the font into a new file with all or a subset of its glyphs; when doing
 so, you have the option of explicitly setting the saved font's target DPI to 96
-or 120 (which will automatically convert the nominal point size as needed).  
+or 120 (which will automatically convert the nominal point size as needed).
 Run the program with no parameters for an explanation of the syntax.
 
 Alexander Taylor
