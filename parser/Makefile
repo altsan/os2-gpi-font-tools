@@ -11,6 +11,9 @@ ifeq ($(OS),OS/2)
   CFLAGS += -Zomf
   EEXT    = .exe
 endif
+ifeq ($(OS),Linux)
+  LDFLAGS = -lm
+endif
 ifeq ($(OS),Windows_NT)
   EEXT    = .exe
   RM      = del
@@ -24,7 +27,7 @@ endif
 
 
 os2font$(EEXT):	$(OBJS)
-		gcc $(CFLAGS) $(OBJS) -o $@
+		gcc $(CFLAGS) $(OBJS) $(LDFLAGS) -o $@
 
 clean:
 		$(RM) $(OBJS) os2font$(EEXT)
