@@ -865,9 +865,18 @@ ULONG ReadOS2FontResource( PSZ pszFile, ULONG ulFace, PULONG pulCount, POS2FONTR
                  free( pBuf );
             }
             else {
-                /* pBuf contains our font, so parse it.
+                /* pBuf contains our font at the located offset.  Copy into a new
+                 * buffer which we can safely entrust to the caller, then parse it.
                  */
-                ulRC = ParseOS2FontResource( pBuf + lx_rte.offset, lx_rte.cb, pFont );
+                PBYTE pReturnBuf = (PBYTE) malloc( lx_rte.cb );
+                if ( !pReturnBuf ) {
+                    ulRC = ERR_MEMORY;
+                    free( pBuf );
+                    goto done;
+                }
+                memcpy( pReturnBuf, pBuf + lx_rte.offset, lx_rte.cb );
+                free( pBuf );
+                ulRC = ParseOS2FontResource( pReturnBuf, lx_rte.cb, pFont );
                 if ( ulRC != 0 ) goto read_fail;
                 fFound = TRUE;
                 /* If we successfully read a font directory resource, we already
