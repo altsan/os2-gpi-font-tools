@@ -160,6 +160,8 @@
 // ----------------------------------------------------------------------------
 // TYPEDEFS
 
+#pragma pack(1)
+
 // A simple linked list of font associations
 typedef struct _font_assoc_node {
     FONTASSOCIATION         font;       // the current component font association
@@ -188,7 +190,7 @@ typedef struct _cmb_font_data {
 typedef struct _abr_file_data {
     PABRFILESIGNATURE  pSignature;      // pointer to the start of the font
     PFONTASSOCIATION   pAssociations;   // pointer to the array of font associations
-    PCOMBFONTEND       pEnd;            // pointer to the font end signature
+    PABRFILEEND        pEnd;            // pointer to the font end signature
 } ABRFILE, *PABRFILE;
 
 
@@ -295,6 +297,8 @@ typedef struct _Global_Data {
         PUNIFONTDIRECTORY pUFontDir;        // when FONT_TYPE_UNI
     } font;
 } CFEGLOBAL, *PCFEGLOBAL;
+
+#pragma pack()
 
 
 // ----------------------------------------------------------------------------
@@ -442,10 +446,12 @@ MRESULT EXPENTRY MainDialogProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
 MRESULT EXPENTRY ProductInfoDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
 void             PopulateMetricFlags( HWND hwndCnr, PCFPROPS pProps );
 void             PopulateValues_CMB( HWND hwnd, PCFEGLOBAL pGlobal );
+void             PopulateValues_ABR( HWND hwnd, PCFEGLOBAL pGlobal );
 MRESULT EXPENTRY RangeDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
 USHORT           ReadFontFile( HWND hwnd, PSZ pszfile, PCFEGLOBAL pGlobal  );
 BOOL             SelectInstalledFont( HWND hwnd, PSZ pszFacename );
 void             SetupCnrCF( HWND hwnd );
+void             SetupCnrAB( HWND hwnd );
 void             SetupCnrUF( HWND hwnd );
 MRESULT EXPENTRY UniFontDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
 

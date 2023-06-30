@@ -100,6 +100,14 @@ int main( int argc, char *argv[] )
                 case FONT_TYPE_CMB:
                     PopulateValues_CMB( global.hwndMain, &global );
                     break;
+                case FONT_TYPE_ABR:
+                    WinShowWindow( WinWindowFromID( global.hwndMain, IDD_FACEGROUP ), FALSE );
+                    WinShowWindow( WinWindowFromID( global.hwndMain, IDD_FACETEXT ),  FALSE );
+                    WinShowWindow( WinWindowFromID( global.hwndMain, IDD_FACENAME ),  FALSE );
+                    WinShowWindow( WinWindowFromID( global.hwndMain, ID_METRICS ),    FALSE );
+                    SetupCnrAB( global.hwndMain );
+                    PopulateValues_ABR( global.hwndMain, &global );
+                    break;
             }
         }
 
@@ -205,7 +213,8 @@ MRESULT EXPENTRY MainDialogProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
                 case ID_NEWCMB:                 // "New -> Combined font or alias file"
                     // TODO see if unsaved changes are pending
                     CloseFontFile( hwnd, pGlobal );
-                    if ( pGlobal->usType != FONT_TYPE_CMB ) {
+                    if ( pGlobal->usType != FONT_TYPE_CMB )
+                    {
                         WinSendDlgItemMsg( hwnd, IDD_COMPONENTS,
                                            CM_REMOVEDETAILFIELDINFO, MPVOID,
                                            MPFROM2SHORT( 0, CMA_INVALIDATE | CMA_FREE ));
@@ -253,6 +262,14 @@ MRESULT EXPENTRY MainDialogProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
                                 SetupCnrCF( hwnd );
                                 PopulateValues_CMB( hwnd, pGlobal );
                                 break;
+                            case FONT_TYPE_ABR:
+                                WinShowWindow( WinWindowFromID( hwnd, IDD_FACEGROUP ), FALSE );
+                                WinShowWindow( WinWindowFromID( hwnd, IDD_FACETEXT ),  FALSE );
+                                WinShowWindow( WinWindowFromID( hwnd, IDD_FACENAME ),  FALSE );
+                                WinShowWindow( WinWindowFromID( hwnd, ID_METRICS ),    FALSE );
+                                SetupCnrAB( hwnd );
+                                PopulateValues_ABR( hwnd, pGlobal );
+                                break;
                             case FONT_TYPE_UNI:
                                 WinShowWindow( WinWindowFromID( hwnd, IDD_FACEGROUP ), FALSE );
                                 WinShowWindow( WinWindowFromID( hwnd, IDD_FACETEXT ),  FALSE );
@@ -288,7 +305,9 @@ MRESULT EXPENTRY MainDialogProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
                                                           CM_QUERYRECORDEMPHASIS,
                                                           MPFROMP( (PRECORDCORE)CMA_FIRST ),
                                                           MPFROMSHORT( CRA_SELECTED ));
-                    if ( pRec && pGlobal->font.combined.pComponents && pGlobal->font.combined.pComponents->ulCmpFonts ) {
+                    if ( pRec && ( pGlobal->usType == FONT_TYPE_CMB )
+                              && pGlobal->font.combined.pComponents
+                              && pGlobal->font.combined.pComponents->ulCmpFonts ) {
 #if 1
                         cfprops.cb = sizeof( CFPROPS );
                         cfprops.hab = pGlobal->hab;
@@ -547,6 +566,7 @@ void CloseFontFile( HWND hwnd, PCFEGLOBAL pGlobal )
     // Free the global data for the current file
     switch ( pGlobal->usType ) {
         case FONT_TYPE_CMB:
+#if 0
             if ( pGlobal->font.combined.pSignature )
                 DosFreeMem( pGlobal->font.combined.pSignature );
             if ( pGlobal->font.combined.pMetrics )
@@ -555,6 +575,16 @@ void CloseFontFile( HWND hwnd, PCFEGLOBAL pGlobal )
                 DosFreeMem( pGlobal->font.combined.pComponents );
             if ( pGlobal->font.combined.pEnd )
                 DosFreeMem( pGlobal->font.combined.pEnd );
+#else
+            if ( pGlobal->font.combined.pSignature )
+                free( pGlobal->font.combined.pSignature );
+            if ( pGlobal->font.combined.pMetrics )
+                free( pGlobal->font.combined.pMetrics );
+            if ( pGlobal->font.combined.pComponents )
+                free( pGlobal->font.combined.pComponents );
+            if ( pGlobal->font.combined.pEnd )
+                free( pGlobal->font.combined.pEnd );
+#endif
             pGlobal->font.combined.pSignature  = NULL;
             pGlobal->font.combined.pMetrics    = NULL;
             pGlobal->font.combined.pComponents = NULL;
@@ -567,8 +597,19 @@ void CloseFontFile( HWND hwnd, PCFEGLOBAL pGlobal )
             pGlobal->font.pUFontDir = NULL;
             break;
 
-        case FONT_TYPE_PCR:
         case FONT_TYPE_ABR:
+            if ( pGlobal->font.abr.pSignature )
+                free( pGlobal->font.abr.pSignature );
+            if ( pGlobal->font.abr.pAssociations )
+                free( pGlobal->font.abr.pAssociations );
+            if ( pGlobal->font.abr.pEnd )
+                free( pGlobal->font.abr.pEnd );
+            pGlobal->font.abr.pSignature    = NULL;
+            pGlobal->font.abr.pAssociations = NULL;
+            pGlobal->font.abr.pEnd          = NULL;
+            break;
+
+        case FONT_TYPE_PCR:
         case FONT_TYPE_UFF:
         default:
              break;
@@ -624,19 +665,19 @@ MRESULT EXPENTRY CompFontDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
             pFld1st = pFld;
             // (first column: font metric item name)
             pFld->cb = sizeof( FIELDINFO );
-            pFld->pTitleData = "Metric Name";
+            pFld->pTitleData = "Metric";
             pFld->flData     = CFA_STRING | CFA_FIREADONLY | CFA_VCENTER | CFA_HORZSEPARATOR | CFA_SEPARATOR;
             pFld->offStruct  = FIELDOFFSET( CMRECORD, pszMetric );
             pFld = pFld->pNextFieldInfo;
             // (second column: font metric flag value)
             pFld->cb = sizeof( FIELDINFO );
-            pFld->pTitleData = "Requirement";
+            pFld->pTitleData = "Criterion";
             pFld->flData     = CFA_STRING | CFA_FIREADONLY | CFA_VCENTER | CFA_HORZSEPARATOR | CFA_SEPARATOR;
             pFld->offStruct  = FIELDOFFSET( CMRECORD, pszFlag );
             pFld = pFld->pNextFieldInfo;
             // (third column: font metric item value)
             pFld->cb = sizeof( FIELDINFO );
-            pFld->pTitleData = "Current Value";
+            pFld->pTitleData = "Value";
             pFld->flData     = CFA_STRING | CFA_FIREADONLY | CFA_VCENTER | CFA_HORZSEPARATOR;
             pFld->offStruct  = FIELDOFFSET( CMRECORD, pszValue );
 
@@ -1730,7 +1771,7 @@ void PopulateValues_CMB( HWND hwnd, PCFEGLOBAL pGlobal )
                          pComp->CompFontAssoc.GlyphRange[0].giEnd );
             }
             else
-                strcpy( pRec->pszRanges, "None");
+                strcpy( pRec->pszRanges, "*");
             strcpy( pRec->pszGlyphList, pComp->CompFontAssoc.unifm.ifiMetrics.szGlyphlistName );
             sprintf( pRec->pszFlags, "0x%X", pComp->CompFontAssoc.flFlags );
             pRec->record.cb = ulCB;
@@ -1745,6 +1786,89 @@ void PopulateValues_CMB( HWND hwnd, PCFEGLOBAL pGlobal )
         ri.fInvalidateRecord = TRUE;
         ri.cRecordsInsert    = pGlobal->font.combined.pComponents->ulCmpFonts;
         WinSendMsg( hwndCnr, CM_INSERTRECORD, MPFROMP( pFirst ), MPFROMP( &ri ));
+    }
+}
+
+
+/* ------------------------------------------------------------------------- *
+ * PopulateValues_ABR                                                        *
+ *                                                                           *
+ * Populate the main window UI with the data read from a newly-opened font   *
+ * bitmap rules (ABR) file.                                                  *
+ *                                                                           *
+ * ARGUMENTS:                                                                *
+ *   HWND hwnd : handle of the main program dialog.                          *
+ *   PCFEGLOBAL pGlobal: pointer to global program data.                     *
+ *                                                                           *
+ * RETURNS: N/A                                                              *
+ * ------------------------------------------------------------------------- */
+void PopulateValues_ABR( HWND hwnd, PCFEGLOBAL pGlobal )
+{
+    PABRFILE         pABR;
+    PFONTASSOCIATION pAssociation;
+    ULONG            ulCB,
+                     ulAssoc,
+                     i;
+    HWND             hwndCnr;
+    PCFRECORD        pRec,
+                     pFirst;
+    RECORDINSERT     ri;
+    SHORT           sIdx;
+    CHAR            szNum[ 5 ],
+                    szError[ 256 ];
+
+    pABR = &(pGlobal->font.abr);
+    if ( !strcmp( pABR->pSignature->szSignature, "Associated Bitmap-fonts Rule")) {
+
+        // now populate the container with the component-font information
+        hwndCnr = WinWindowFromID( hwnd, IDD_COMPONENTS );
+        ulCB = sizeof( CFRECORD ) - sizeof( MINIRECORDCORE );
+        pRec = (PCFRECORD) WinSendMsg( hwndCnr, CM_ALLOCRECORD,
+                                       MPFROMLONG( ulCB ),
+                                       MPFROMLONG( pABR->pSignature->ulCount + 1 ));
+        pFirst = pRec;
+        ulCB = sizeof( MINIRECORDCORE );
+        ulAssoc = pABR->pAssociations->ulSize;
+
+        for ( i = 0; i <= pABR->pSignature->ulCount; i++ ) {
+            pAssociation = (PFONTASSOCIATION)( (PBYTE) pABR->pAssociations + ( i * ulAssoc ));
+            if ( pAssociation->Identity != SIG_FTAS ) continue;
+            ulAssoc = pAssociation->ulSize;
+
+            pRec->pszFace      = (PSZ) calloc( FACESIZE, 1 );
+            pRec->pszRanges    = (PSZ) calloc( SZRANGES_MAXZ, 1 );
+            pRec->pszGlyphList = (PSZ) calloc( GLYPHNAMESIZE, 1 );
+            pRec->pszFlags     = (PSZ) calloc( SZFLAGS_MAXZ, 1 );
+
+            strcpy( pRec->pszFace, pAssociation->unifm.ifiMetrics.szFacename );
+            if ( pAssociation->ulGlyphRanges > 1 )
+                sprintf( pRec->pszRanges, "(%u ranges)", pAssociation->ulGlyphRanges );
+            else if ( pAssociation->ulGlyphRanges == 1 ) {
+                sprintf( pRec->pszRanges, "%u - %u",
+                         pAssociation->GlyphRange[0].giStart,
+                         pAssociation->GlyphRange[0].giEnd );
+            }
+            else
+                strcpy( pRec->pszRanges, "*");
+            sprintf( pRec->pszGlyphList, "%ld", pAssociation->unifm.ifiMetrics.lCapEmHeight );
+            sprintf( pRec->pszFlags, "0x%X", pAssociation->flFlags );
+            pRec->record.cb = ulCB;
+            pRec->record.pszIcon = pRec->pszFace;
+            pRec->ulIndex = i;
+            pRec = (PCFRECORD) pRec->record.preccNextRecord;
+        }
+        ri.cb                = sizeof( RECORDINSERT );
+        ri.pRecordOrder      = (PRECORDCORE) CMA_END;
+        ri.pRecordParent     = NULL;
+        ri.zOrder            = (ULONG) CMA_TOP;
+        ri.fInvalidateRecord = TRUE;
+        ri.cRecordsInsert    = pABR->pSignature->ulCount + 1;
+        WinSendMsg( hwndCnr, CM_INSERTRECORD, MPFROMP( pFirst ), MPFROMP( &ri ));
+    }
+    else {
+        sprintf( szError, "Unrecognized file signature: %200s", pABR->pSignature->szSignature );
+        WinMessageBox( HWND_DESKTOP, hwnd, szError, "Unsupported Format",
+                       0, MB_MOVEABLE | MB_OK | MB_ERROR );
     }
 }
 
@@ -1975,7 +2099,7 @@ USHORT ReadFontFile( HWND hwnd, PSZ pszFile, PCFEGLOBAL pGlobal )
         goto finish;
     }
 
-    // Verify the file format
+    // Verify the file format and parse accordingly
     pSig = (PGENERICRECORD) pBuffer;
     if (( pSig->Identity == SIG_CBFS ) &&
         ( pSig->ulSize == sizeof( COMBFONTSIGNATURE )))
@@ -1986,6 +2110,8 @@ USHORT ReadFontFile( HWND hwnd, PSZ pszFile, PCFEGLOBAL pGlobal )
         PCOMPFONTHEADER    pComponents;
         PCOMBFONTEND       pEnd;
 
+        // Allocate separate new buffers for each portion of the file
+        // so we can more easily add or remove parts later
         pSignature  = (PCOMBFONTSIGNATURE) pSig;
         pMetrics    = (PCOMBFONTMETRICS)( pBuffer + pSig->ulSize );
         pComponents = (PCOMPFONTHEADER)( (PBYTE) pMetrics + pMetrics->ulSize );
@@ -1993,6 +2119,7 @@ USHORT ReadFontFile( HWND hwnd, PSZ pszFile, PCFEGLOBAL pGlobal )
                   (( pComponents->ulCmpFonts - 1 ) * sizeof( COMPFONT )): 0;
         pEnd = (PCOMBFONTEND)( (PBYTE) pComponents + pComponents->ulSize + ulArray );
 
+#if 0
         rc = DosAllocMem( (PPVOID) &(pGlobal->font.combined.pSignature),
                           pSignature->ulSize, PAG_READ | PAG_WRITE | PAG_COMMIT );
         if ( rc != NO_ERROR ) goto finish;
@@ -2006,7 +2133,28 @@ USHORT ReadFontFile( HWND hwnd, PSZ pszFile, PCFEGLOBAL pGlobal )
         rc = DosAllocMem( (PPVOID) &(pGlobal->font.combined.pEnd),
                           pEnd->ulSize, PAG_READ | PAG_WRITE | PAG_COMMIT );
         if ( rc != NO_ERROR ) goto finish;
-
+#else
+        pGlobal->font.combined.pSignature = (PCOMBFONTSIGNATURE) malloc( pSignature->ulSize );
+        if ( !pGlobal->font.combined.pSignature ) goto finish;
+        pGlobal->font.combined.pMetrics = (PCOMBFONTMETRICS) malloc( pMetrics->ulSize );
+        if ( !pGlobal->font.combined.pMetrics ) {
+            free( pGlobal->font.combined.pSignature );
+            goto finish;
+        }
+        pGlobal->font.combined.pComponents = (PCOMPFONTHEADER) malloc( pComponents->ulSize + ulArray );
+        if ( !pGlobal->font.combined.pComponents ) {
+            free( pGlobal->font.combined.pSignature );
+            free( pGlobal->font.combined.pMetrics );
+            goto finish;
+        }
+        pGlobal->font.combined.pEnd = (PCOMBFONTEND) malloc( pEnd->ulSize );
+        if ( !pGlobal->font.combined.pEnd ) {
+            free( pGlobal->font.combined.pSignature );
+            free( pGlobal->font.combined.pMetrics );
+            free( pGlobal->font.combined.pComponents );
+            goto finish;
+        }
+#endif
         memcpy( pGlobal->font.combined.pSignature, pSignature, pSignature->ulSize );
         memcpy( pGlobal->font.combined.pMetrics, pMetrics, pMetrics->ulSize );
         memcpy( pGlobal->font.combined.pComponents, pComponents,
@@ -2018,22 +2166,49 @@ USHORT ReadFontFile( HWND hwnd, PSZ pszFile, PCFEGLOBAL pGlobal )
         pGlobal->usType = FONT_TYPE_CMB;
         usType = pGlobal->usType;
     }
-#if 0
     else if (( pSig->Identity == SIG_ABRS ) &&
         ( pSig->ulSize == sizeof( ABRFILESIGNATURE )))
     {
         // Associated bitmap rules file
+#if 1
+        PABRFILESIGNATURE pSignature;
+        PFONTASSOCIATION  pAssociations;
+        PABRFILEEND       pEnd;
+
+        pSignature = (PABRFILESIGNATURE) pSig;
+        pAssociations = (PFONTASSOCIATION)( pBuffer + pSignature->ulSize );
+        ulArray = ( pSignature->ulCount + 1 ) * pAssociations->ulSize;
+        pEnd = (PABRFILEEND)( (PBYTE)pAssociations + ulArray );
+
+        pGlobal->font.abr.pSignature = (PABRFILESIGNATURE) malloc( pSignature->ulSize );
+        if ( !pGlobal->font.abr.pSignature ) goto finish;
+        pGlobal->font.abr.pAssociations = (PFONTASSOCIATION) malloc( ulArray );
+        if ( !pGlobal->font.abr.pAssociations ) {
+            free( pGlobal->font.abr.pSignature );
+            goto finish;
+        }
+        pGlobal->font.abr.pEnd = (PABRFILEEND) malloc( pEnd->ulSize );
+        if ( !pGlobal->font.abr.pEnd) {
+            free( pGlobal->font.abr.pSignature );
+            free( pGlobal->font.abr.pEnd );
+            goto finish;
+        }
+        memcpy( pGlobal->font.abr.pSignature, pSignature, pSignature->ulSize );
+        memcpy( pGlobal->font.abr.pAssociations, pAssociations, ulArray );
+        memcpy( pGlobal->font.abr.pEnd, pEnd, pEnd->ulSize );
+
+#else
         pGlobal->font.abr.pSignature    = (PABRFILESIGNATURE) pSig;
         pGlobal->font.abr.pAssociations = (PFONTASSOCIATION)( pBuffer + pSig->ulSize );
         ulArray = ( pGlobal->font.abr.pSignature->ulCount + 1 ) * sizeof( FONTASSOCIATION );
         pGlobal->font.abr.pEnd = (PABRFILEEND)
                                     ( (PBYTE)(pGlobal->font.abr.pAssociations) + ulArray );
+#endif
         pGlobal->cbFile = fs3.cbFile;
         strncpy( pGlobal->szCurrentFile, pszFile, CCHMAXPATH );
         pGlobal->usType = FONT_TYPE_ABR;
         usType = pGlobal->usType;
     }
-#endif
     else if (( pSig->Identity == SIG_UNFD ) &&
         ( pSig->ulSize == sizeof( UNIFONTDIRECTORY )))
     {
@@ -2157,7 +2332,7 @@ void SetupCnrCF( HWND hwnd )
     pFld = pFld->pNextFieldInfo;
     // (second column: associated glyph ranges)
     pFld->cb = sizeof( FIELDINFO );
-    pFld->pTitleData = "Associated Glyphs";
+    pFld->pTitleData = "Glyphs Included";
     pFld->flData     = CFA_STRING | CFA_FIREADONLY | CFA_VCENTER | CFA_HORZSEPARATOR | CFA_SEPARATOR;
     pFld->offStruct  = FIELDOFFSET( CFRECORD, pszRanges );
     pFld = pFld->pNextFieldInfo;
@@ -2166,6 +2341,80 @@ void SetupCnrCF( HWND hwnd )
     pFld->pTitleData = "GPI Encoding";
     pFld->flData     = CFA_STRING | CFA_FIREADONLY | CFA_VCENTER | CFA_HORZSEPARATOR;
     pFld->offStruct  = FIELDOFFSET( CFRECORD, pszGlyphList );
+
+    finsert.cb                   = (ULONG) sizeof( FIELDINFOINSERT );
+    finsert.pFieldInfoOrder      = (PFIELDINFO) CMA_END;
+    finsert.fInvalidateFieldInfo = TRUE;
+    finsert.cFieldInfoInsert     = 3;
+    WinSendMsg( hwndCnr, CM_INSERTDETAILFIELDINFO,
+                MPFROMP( pFld1st ), MPFROMP( &finsert ));
+
+}
+
+
+/* ------------------------------------------------------------------------- *
+ * SetupCnrAB                                                                *
+ *                                                                           *
+ * Sets up the associated bitmap rule container.                             *
+ *                                                                           *
+ * ARGUMENTS:                                                                *
+ *   HWND hwnd : handle of the main program dialog.                          *
+ *                                                                           *
+ * RETURNS: N/A                                                              *
+ * ------------------------------------------------------------------------- */
+void SetupCnrAB( HWND hwnd )
+{
+    HWND            hwndCnr;
+    CNRINFO         cnr = {0};
+    PFIELDINFO      pFld,
+                    pFld1st;
+    FIELDINFOINSERT finsert;
+    POINTL          aptl[ 2 ];
+
+    WinSetDlgItemText( hwnd, IDD_STATUS, "Associated Bitmap Rules");
+
+    // update the container & groupbox layout
+    WinSetDlgItemText( hwnd, IDD_GROUPBOX, "Associated fonts");
+    aptl[0].x = 285;
+    aptl[0].y = 120;
+    aptl[1].x = 275;
+    aptl[1].y = 92;
+    WinMapDlgPoints( hwnd, aptl, 2, TRUE );
+    WinSetWindowPos( WinWindowFromID( hwnd, IDD_COMPONENTS ), HWND_TOP,
+                     0, 0, aptl[1].x, aptl[1].y, SWP_SIZE | SWP_ZORDER );
+    WinSetWindowPos( WinWindowFromID( hwnd, IDD_GROUPBOX ), NULLHANDLE,
+                     0, 0, aptl[0].x, aptl[0].y, SWP_SIZE );
+
+    // set up the font information container
+    hwndCnr = WinWindowFromID( hwnd, IDD_COMPONENTS );
+    WinSendMsg( hwndCnr, CM_REMOVEDETAILFIELDINFO, MPVOID,
+                MPFROM2SHORT( 0, CMA_INVALIDATE | CMA_FREE ));
+    cnr.flWindowAttr  = CV_DETAIL | CA_DETAILSVIEWTITLES;
+    cnr.pszCnrTitle   = "Component Fonts";
+    cnr.cyLineSpacing = 2;
+    WinSendMsg( hwndCnr, CM_SETCNRINFO, MPFROMP( &cnr ),
+                MPFROMLONG( CMA_FLWINDOWATTR | CMA_LINESPACING ));
+    pFld = (PFIELDINFO) WinSendMsg( hwndCnr, CM_ALLOCDETAILFIELDINFO,
+                                    MPFROMLONG( 3L ), MPVOID );
+    pFld1st = pFld;
+    // (first column: font face name)
+    pFld->cb = sizeof( FIELDINFO );
+    pFld->pTitleData = "Face Name";
+    pFld->flData     = CFA_STRING | CFA_FIREADONLY | CFA_VCENTER | CFA_HORZSEPARATOR | CFA_SEPARATOR;
+    pFld->offStruct  = FIELDOFFSET( CFRECORD, pszFace );
+    pFld = pFld->pNextFieldInfo;
+    // (second column: character cell size, we use the glyphlist field for this)
+    pFld->cb = sizeof( FIELDINFO );
+    pFld->pTitleData = "Character Cell Size";
+    pFld->flData     = CFA_STRING | CFA_FIREADONLY | CFA_VCENTER | CFA_HORZSEPARATOR | CFA_SEPARATOR;
+    pFld->offStruct  = FIELDOFFSET( CFRECORD, pszGlyphList );
+    pFld = pFld->pNextFieldInfo;
+    // (third column: associated glyph ranges)
+    pFld->cb = sizeof( FIELDINFO );
+    pFld->pTitleData = "Flags";
+    pFld->flData     = CFA_STRING | CFA_FIREADONLY | CFA_VCENTER | CFA_HORZSEPARATOR;
+    pFld->offStruct  = FIELDOFFSET( CFRECORD, pszFlags );
+    pFld = pFld->pNextFieldInfo;
 
     finsert.cb                   = (ULONG) sizeof( FIELDINFOINSERT );
     finsert.pFieldInfoOrder      = (PFIELDINFO) CMA_END;
