@@ -34,7 +34,7 @@ typedef IFIMETRICS IFIMETRICS32, *PIFIMETRICS32;
 #define FACESIZE        32
 #define GLYPHNAMESIZE   16
 
-/* IFIMETRICS32 fsType flags */
+/* IFIMETRICS32 flType flags */
 
 #define IFIMETRICS32_FIXED       0x0001     /* font is fixed-width          */
 #define IFIMETRICS32_LICENSED    0x0002     /* font is protected by license */
@@ -47,12 +47,12 @@ typedef IFIMETRICS IFIMETRICS32, *PIFIMETRICS32;
 #define IFIMETRICS32_FACETRUNC   0x1000     /* face name was truncated      */
 #define IFIMETRICS32_FAMTRUNC    0x2000     /* family name was truncated    */
 
-/* IFIMETRICS32 fsDefn flags */
+/* IFIMETRICS32 flDefn flags */
 
 #define IFIMETRICS_OUTLINE       0x0001     /* font is outline (not bitmap) */
 #define IFIMETRICS32_UDC_FONT    0x0010     /* DBCS user-defined characters */
 
-/* IFIMETRICS32 fsSelection flags */
+/* IFIMETRICS32 flSelection flags */
 
 #define IFIMETRICS32_ITALIC      0x8000     /* italic (outline/bitmap fonts)     */
 #define IFIMETRICS32_UNDERSCORE  0x4000     /* underscore (outline/bitmap fonts) */
@@ -60,6 +60,8 @@ typedef IFIMETRICS IFIMETRICS32, *PIFIMETRICS32;
 #define IFIMETRICS32_NEGATIVE    0x1000     /* negative image (bitmap fonts) */
 #define IFIMETRICS32_HOLLOW      0x0800     /* outlined image (bitmap fonts) */
 
+
+#pragma pack(1)
 
 /* The IFIMETRICS32 structure is slightly different from the regular IFIMETRICS
  * used by the OS/2 installable font interface.
@@ -263,7 +265,7 @@ typedef struct _UNIENDFONTRESOURCE {
  * find of this structure in actual use) report 580 bytes in the ulSize field
  * (and the file format bears this number out).  Since the other fields appear
  * to be accurate, that leaves a total of 296 bytes available for both arrays.
- * The 148 bytes assigned to each array here is just a guess; unfortunately,
+ * The 256/40 bytes assigned to the arrays here is just a guess; unfortunately,
  * no CMB font that I'm aware of uses either field so the format cannot be
  * reverse-engineered any further.  Until a more definitive reference can be
  * found, use of these two fields is probably best avoided.  (It's also a good
@@ -283,8 +285,8 @@ typedef struct _UNIFONTMETRICS {
                                 /*   (bit 2)                                */
                                 /*   - The szFullFacename field is valid.   */
     UCHAR        panose[ 12 ];          /* The 12-byte PANOSE structure.    */
-    UCHAR        szFullFamilyname[148]; /* The untruncated font family name */
-    UCHAR        szFullFacename[148];   /* The untruncated font face name   */
+    UCHAR        szFullFamilyname[256]; /* The untruncated font family name */
+    UCHAR        szFullFacename[40];    /* The untruncated font face name   */
 
 } UNIFONTMETRICS;
 typedef UNIFONTMETRICS *PUNIFONTMETRICS;
@@ -623,5 +625,6 @@ typedef UNIKERNPAIRTABLE *PUNIKERNPAIRTABLE;
  * OS/2 Bitmap image of one bit per pixel (1bpp).
  */
 
+#pragma pack()
 #endif      // #ifndef __UNIFONT_H__
 

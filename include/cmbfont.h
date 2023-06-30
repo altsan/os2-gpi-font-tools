@@ -54,8 +54,9 @@ typedef ULONG *PGLYPH;
 // ----------------------------------------------------------------------------
 // TYPEDEFS
 
+#pragma pack(1)
 
-/* The structure of a combine font file is as follows:
+/* The structure of a combined font file is as follows:
  *  1. Combined font signature (COMBFONTSIGNATURE)
  *  2. Combined font metrics (COMBFONTMETRICS)
  *  3. Component font header and 1-st component font (COMPFONTHEADER)
@@ -206,6 +207,10 @@ typedef struct _FONTASSOCIATION {
 
     ULONG                flFlags;
 
+    /* The following field might not exist (in ABR files in particular).    */
+    /* Always use the ulSize field to get the FONTASSOCIATION structure     */
+    /* size, and make sure ulGlyphRanges is >0 before trying to access      */
+    /* the GlyphRange array.                                                */
     FONTASSOCGLYPHRANGE  GlyphRange[1];   /* The array of glyph ranges to   */
                                           /* associate. For combined fonts, */
                                           /* the range will decide what     */
@@ -218,6 +223,7 @@ typedef struct _FONTASSOCIATION {
                                           /* source font. The number of     */
                                           /* arrays depends on the value of */
                                           /* ulGlyphRanges.                 */
+
 } FONTASSOCIATION;
 typedef FONTASSOCIATION *PFONTASSOCIATION;
 
@@ -318,5 +324,6 @@ typedef struct _PRECOMBRULEEND {
 } PRECOMBRULEEND;
 typedef PRECOMBRULEEND *PPRECOMBRULEEND;
 
+#pragma pack()
 #endif      // #ifndef __CMBFONT_H__
 
