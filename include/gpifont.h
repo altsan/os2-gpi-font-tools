@@ -158,9 +158,17 @@ typedef GENERICRECORD OS2FONTEND, *POS2FONTEND;
 
 
 /* The font metrics structure ("IBM Font Object Content Architecture" metrics).
+ *
+ * The number of _reported_ glyphs in the raster font normally equals
+ * usLastChar+1 (as this value is an index offset from usFirstChar).  Most
+ * fonts actually have an additional glyph definition (and corresponding
+ * bitmap) at the end, which isn't included in the count, for the so-called
+ * .null character.  However (and the GPI documentation doesn't mention this),
+ * some fonts have the .null character explicitly defined at index 0, in which
+ * case there is no extra glyph at the end.
  */
 typedef struct _OS2_FOCA_Metrics {
-    ULONG   ulIdentity;             /* 0x00000001                           */
+    ULONG   Identity;               /* 0x00000001                           */
     ULONG   ulSize;                 /* size of this structure               */
     CHAR    szFamilyname[32];       /* font family name (null-terminated)   */
     CHAR    szFacename[32];         /* font face name (null-terminated)     */
@@ -216,10 +224,13 @@ typedef struct _OS2_FOCA_Metrics {
 
 /* The font definition header.  Not all of these fields may be used, depending
  * on the font type (indicated by the flags in fsFontdef).
+ * According to the GPI documentation, the ulSize field is supposed to contain
+ * the size of this data structure. In fact, it actually contains the size of
+ * the data structure _plus_ all the glyph data that follows.
  */
 typedef struct _OS2_Font_Definition {
-    ULONG ulIdentity;           /* 0x00000002                               */
-    ULONG ulSize;               /* size of this structure                   */
+    ULONG Identity;             /* 0x00000002                               */
+    ULONG ulSize;               /* size of character data (see note above)  */
     SHORT fsFontdef;            /* flags indicating which fields are used   */
     SHORT fsChardef;            /* flags indicating format of char defs     */
     SHORT usCellSize;           /* size (in bytes) of each char definition  */
@@ -251,10 +262,10 @@ typedef struct _OS2_Font_Definition {
  * so even if our kern-table parsing is flawed it shouldn't be fatal.
  */
 typedef struct _OS2_Kerning_Table {
-    ULONG   ulIdentity;             /* 0x00000003       */
+    ULONG   Identity;               /* 0x00000003       */
     ULONG   ulSize;                 /* must be 10 (??)  */
     CHAR    cFirstpair;             /* undocumented     */
-} OS2KERNPAIRTABLE , *POS2KERNPAIRTABLE;
+} OS2KERNPAIRTABLE, *POS2KERNPAIRTABLE;
 
 typedef struct _OS2_Kerning_Pair {
     SHORT   sFirstChar;             /* first character of pair  */
@@ -266,7 +277,7 @@ typedef struct _OS2_Kerning_Pair {
 /* The "additional metrics" structure contains the PANOSE table.
  */
 typedef struct _OS2_Extra_Metrics {
-    ULONG   ulIdentity;             /* 0x00000004                       */
+    ULONG   Identity;               /* 0x00000004                       */
     ULONG   ulSize;                 /* structure size (20 bytes)        */
     UCHAR   panose[12];             /* PANOSE table padded to 12 bytes  */
 } OS2ADDMETRICS, *POS2ADDMETRICS;
