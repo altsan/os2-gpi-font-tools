@@ -2018,7 +2018,7 @@ USHORT ReadFontFile( HWND hwnd, PSZ pszFile, PCFEGLOBAL pGlobal )
         pGlobal->usType = FONT_TYPE_CMB;
         usType = pGlobal->usType;
     }
-#if 0
+#if 1
     else if (( pSig->Identity == SIG_ABRS ) &&
         ( pSig->ulSize == sizeof( ABRFILESIGNATURE )))
     {
