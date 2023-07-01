@@ -122,5 +122,38 @@
 
 #define IDD_FONTDLG                 600
 
+#define IDD_METRICS                 700
+
 #define IDD_ABOUT                   900
 
+#define IDD_MINPTS                  702
+#define IDD_MAXPTS                  703
+#define IDD_AVECHARWIDTH            706
+#define IDD_SLOPEDEG                705
+#define IDD_SLOPEMIN                707
+#define IDD_DIRDEG                  708
+#define IDD_DIRMIN                  709
+#define IDD_ROTDEG                  710
+#define IDD_ROTMIN                  711
+#define IDD_SUBSCRX                 712
+#define IDD_SUBSCRY                 713
+#define IDD_SUBOFFX                 715
+#define IDD_SUBOFFY                 716
+#define IDD_SUPSCRX                 718
+#define IDD_SUPSCRY                 719
+#define IDD_SUPOFFX                 721
+#define IDD_SUPOFFY                 722
+#define IDD_USCSIZE                 724
+#define IDD_USCPOS                  725
+#define IDD_STRKSIZE                726
+#define IDD_STRKPOS                 727
+#define IDD_LICENSED                714
+#define IDD_KERNING                 717
+#define IDD_DBCS                    720
+#define IDD_MBCS                    723
+#define IDD_FSTYPE                  728
+#define IDD_FSSELECTION             729
+#define IDD_FSDEFN                  730
+#define IDD_FSCAPABILITIES          731
+#define IDD_PANOSE                  16
+#define IDD_GLYPHLIST               24

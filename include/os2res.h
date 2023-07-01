@@ -52,21 +52,21 @@
 
 
 typedef struct _NE_rt_entry {           /* Resource table entry */
-    unsigned short etype;
-    unsigned short ename;
+    USHORT etype;
+    USHORT ename;
 } NERTENTRY, *PNERTENTRY;
 
 typedef struct _NE_header {             /* 16-bit EXE header    */
-    unsigned short  magic;                  /* 0x454E ("NE")                  */
-    char            unused1[26];            /* various unnecessary fields     */
-    unsigned short  cseg;                   /* number of file segments        */
-    char            unused2[4];             /* various unnecessary fields     */
-    unsigned short  seg_tbl;                /* offset to segment table        */
-    unsigned short  res_tbl;                /* offset to resource table       */
-    unsigned short  rnam_tbl;               /* offset to resident-names table */
-    char            unused3[10];            /* various unnecessary fields     */
-    unsigned short  segshift;               /* segment alignment shift        */
-    unsigned short  cres;                   /* number of resource entries     */
+    USHORT  magic;                  /* 0x454E ("NE")                  */
+    CHAR    unused1[26];            /* various unnecessary fields     */
+    USHORT  cseg;                   /* number of file segments        */
+    CHAR    unused2[4];             /* various unnecessary fields     */
+    USHORT  seg_tbl;                /* offset to segment table        */
+    USHORT  res_tbl;                /* offset to resource table       */
+    USHORT  rnam_tbl;               /* offset to resident-names table */
+    CHAR    unused3[10];            /* various unnecessary fields     */
+    USHORT  segshift;               /* segment alignment shift        */
+    USHORT  cres;                   /* number of resource entries     */
     /*  10 bytes of various unnecessary fields follow */
 } NEHEADER, *PNEHEADER;
 
@@ -75,44 +75,44 @@ typedef struct _NE_header {             /* 16-bit EXE header    */
  */
 
 typedef struct _LX_rt_entry {           /* Resource table entry  */
-    unsigned short type;
-    unsigned short name;
-    unsigned long  cb;
-    unsigned short obj;
-    unsigned long  offset;
+    USHORT type;
+    USHORT name;
+    ULONG  cb;
+    USHORT obj;
+    ULONG  offset;
 } LXRTENTRY;
 
 typedef struct _LX_ot_entry {           /* Object table entry    */
-    unsigned long size;
-    unsigned long base;
-    unsigned long flags;
-    unsigned long pagemap;
-    unsigned long mapsize;
-    unsigned long reserved;
+    ULONG size;
+    ULONG base;
+    ULONG flags;
+    ULONG pagemap;
+    ULONG mapsize;
+    ULONG reserved;
 } LXOTENTRY;
 
 typedef struct LX_opm_entry {           /* Object page-map entry */
-    unsigned long  dataoffset;
-    unsigned short size;
-    unsigned short flags;
+    ULONG  dataoffset;
+    USHORT size;
+    USHORT flags;
 } LXOPMENTRY, *PLXOPMENTRY;
 
 typedef struct _LX_header {             /* 32-bit EXE header     */
-    unsigned short  magic;                  /* 0x4C58 ("LX")                  */
-    unsigned char   unused1[42];            /* various unnecessary fields     */
-    unsigned long   pageshift;              /* page alignment shift           */
-    unsigned char   unused2[8];             /* various unnecessary fields     */
-    unsigned long   ldrsize;                /* loader section size            */
-    unsigned long   ldrsum;                 /* loader section checksum        */
-    unsigned long   obj_tbl;                /* offset to object table         */
-    unsigned char   unused3[4];             /* various unnecessary fields     */
-    unsigned long   objmap;                 /* offset to object page map      */
-    unsigned char   unused4[4];             /* various unnecessary fields     */
-    unsigned long   res_tbl;                /* offset to resource table       */
-    unsigned long   cres;                   /* number of resource entries     */
-    unsigned long   rnam_tbl;               /* offset to resident-names table */
-    unsigned char   unused5[36];            /* various unnecessary fields     */
-    unsigned long   datapage;               /* offset to data pages           */
+    USHORT  magic;                  /* 0x4C58 ("LX")                  */
+    UCHAR   unused1[42];            /* various unnecessary fields     */
+    ULONG   pageshift;              /* page alignment shift           */
+    UCHAR   unused2[8];             /* various unnecessary fields     */
+    ULONG   ldrsize;                /* loader section size            */
+    ULONG   ldrsum;                 /* loader section checksum        */
+    ULONG   obj_tbl;                /* offset to object table         */
+    UCHAR   unused3[4];             /* various unnecessary fields     */
+    ULONG   objmap;                 /* offset to object page map      */
+    UCHAR   unused4[4];             /* various unnecessary fields     */
+    ULONG   res_tbl;                /* offset to resource table       */
+    ULONG   cres;                   /* number of resource entries     */
+    ULONG   rnam_tbl;               /* offset to resident-names table */
+    UCHAR   unused5[36];            /* various unnecessary fields     */
+    ULONG   datapage;               /* offset to data pages           */
     /* 64 bytes of various unnecessary fields follow                          */
 } LXHEADER;
 

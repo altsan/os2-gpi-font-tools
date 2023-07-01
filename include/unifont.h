@@ -24,12 +24,6 @@
 #ifndef __UNIFONT_H__
 #define __UNIFONT_H__
 
-#if 0
-
-#include "32ifimet.h"
-typedef IFIMETRICS IFIMETRICS32, *PIFIMETRICS32;
-
-#else
 
 #define FACESIZE        32
 #define GLYPHNAMESIZE   16
@@ -115,8 +109,6 @@ typedef struct _IFIMETRICS32 {
     ULONG   ulFontClass;
 } IFIMETRICS32;
 typedef IFIMETRICS32 *PIFIMETRICS32;
-
-#endif
 
 
 /* The Uni-font resource signature string (null-terminated).
