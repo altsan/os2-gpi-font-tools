@@ -125,6 +125,7 @@
 #define IDD_METRICS                 700
 
 #define IDD_ABOUT                   900
+#define IDD_ABOUTNAME               901
 
 #define IDD_MINPTS                  702
 #define IDD_MAXPTS                  703

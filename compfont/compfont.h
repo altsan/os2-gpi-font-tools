@@ -2,7 +2,7 @@
  * compfont.h                                                                *
  *                                                                           *
  *  OS/2-GPI Composite Font Editor/Inspector                                 *
- *  Copyright (C) 2016 Alexander Taylor                                      *
+ *  Copyright (C) 2016-2023 Alexander Taylor                                 *
  *                                                                           *
  *  This program is free software: you can redistribute it and/or modify     *
  *  it under the terms of the GNU General Public License as published by     *
@@ -302,141 +302,10 @@ typedef struct _Global_Data {
 
 
 // ----------------------------------------------------------------------------
-// GLOBAL VARIABLES
-
-// Font metric container field description strings
-PSZ g_MetricItems[] = {         // corresponding field in IFIMETRICS32
-    "Family name",              // 0  (UCHAR[FACESIZE])
-    "Face name",                // 1  (UCHAR[FACESIZE])
-    "Glyphlist",                // 2  (UCHAR[GLYPHNAMESIZE])
-    "IBM registered ID",        // 3  (ULONG)
-    "Em height",                // 4  (LONG)
-    "X height",                 // 5  (LONG)
-    "Max ascender",             // 6  (LONG)
-    "Max descender",            // 7  (LONG)
-    "Lowercase ascent",         // 8  (LONG)
-    "Lowercase descent",        // 9  (LONG)
-    "Internal leading",         // 10 (LONG)
-    "External leading",         // 11 (LONG)
-    "Average character width",  // 12 (LONG)
-    "Max character increment",  // 13 (LONG)
-    "Em increment",             // 14 (LONG)
-    "Max baseline extent",      // 15 (LONG)
-    "Character slope",          // 16 (FIXED)
-    "Inline direction",         // 17 (FIXED)
-    "Character rotation",       // 18 (FIXED)
-    "Weight class",             // 19 (ULONG)
-    "Width class",              // 20 (ULONG)
-    "X resolution",             // 21 (LONG)
-    "Y resolution",             // 22 (LONG)
-    "First character",          // 23 (GLYPH)
-    "Last character",           // 24 (GLYPH)
-    "Default character",        // 25 (GLYPH)
-    "Break character",          // 26 (GLYPH)
-    "Nominal point size",       // 27 (ULONG)
-    "Minimum point size",       // 28 (ULONG)
-    "Maximum point size",       // 29 (ULONG)
-    "Type flags",               // 30 (ULONG)
-    "Definition flags",         // 31 (ULONG)
-    "Selection flags",          // 32 (ULONG)
-    "Font capabilities",        // 33 (ULONG)
-    "Subscript size X",         // 34 (LONG)
-    "Subscript size Y",         // 35 (LONG)
-    "Subscript offset X",       // 36 (LONG)
-    "Subscript offset Y",       // 37 (LONG)
-    "Superscript size X",       // 38 (LONG)
-    "Superscript size Y",       // 39 (LONG)
-    "Superscript offset X",     // 40 (LONG)
-    "Superscript offset Y",     // 41 (LONG)
-    "Underscore size",          // 42 (LONG)
-    "Underscore position",      // 43 (LONG)
-    "Strikeout size",           // 44 (LONG)
-    "Strikeout position",       // 45 (LONG)
-    "Kerning pairs",            // 46 (ULONG)
-    "Font class"                // 47 (ULONG)
-};
-
-// Font family class names
-PSZ g_FamilyClasses[] = {
-    FF_CLASS_0, FF_CLASS_1, FF_CLASS_2, FF_CLASS_3, FF_CLASS_4,
-    FF_CLASS_5, FF_CLASS_7, FF_CLASS_8, FF_CLASS_9, FF_CLASS_10, FF_CLASS_12
-};
-
-// Font family 0 subclass names
-PSZ g_FamilySubclasses0[] = {
-    FF_SUBCLASS_0
-};
-
-// Font family 1 subclass names
-PSZ g_FamilySubclasses1[] = {
-    FF_SUBCLASS_0,   FF_SUBCLASS_1_1, FF_SUBCLASS_1_2, FF_SUBCLASS_1_3,
-    FF_SUBCLASS_1_4, FF_SUBCLASS_1_5, FF_SUBCLASS_1_6, FF_SUBCLASS_1_7,
-    FF_SUBCLASS_1_8, FF_SUBCLASS_15
-};
-
-// Font family 2 subclass names
-PSZ g_FamilySubclasses2[] = {
-    FF_SUBCLASS_0, FF_SUBCLASS_2_1, FF_SUBCLASS_2_2, FF_SUBCLASS_15
-};
-
-// Font family 3 subclass names
-PSZ g_FamilySubclasses3[] = {
-    FF_SUBCLASS_0, FF_SUBCLASS_3_1, FF_SUBCLASS_3_2, FF_SUBCLASS_15
-};
-
-// Font family 4 subclass names
-PSZ g_FamilySubclasses4[] = {
-    FF_SUBCLASS_0,   FF_SUBCLASS_4_1, FF_SUBCLASS_4_2, FF_SUBCLASS_4_3,
-    FF_SUBCLASS_4_4, FF_SUBCLASS_4_5, FF_SUBCLASS_4_6, FF_SUBCLASS_4_7,
-    FF_SUBCLASS_15
-};
-
-// Font family 5 subclass names
-PSZ g_FamilySubclasses5[] = {
-    FF_SUBCLASS_0, FF_SUBCLASS_5_1, FF_SUBCLASS_5_2, FF_SUBCLASS_5_3,
-    FF_SUBCLASS_5_4, FF_SUBCLASS_5_5, FF_SUBCLASS_15
-};
-
-// Font family 7 subclass names
-PSZ g_FamilySubclasses7[] = {
-    FF_SUBCLASS_0, FF_SUBCLASS_7_1, FF_SUBCLASS_15
-};
-
-// Font family 8 subclass names
-PSZ g_FamilySubclasses8[] = {
-    FF_SUBCLASS_0,    FF_SUBCLASS_8_1, FF_SUBCLASS_8_2, FF_SUBCLASS_8_3,
-    FF_SUBCLASS_8_4,  FF_SUBCLASS_8_5, FF_SUBCLASS_8_6, FF_SUBCLASS_8_9,
-    FF_SUBCLASS_8_10, FF_SUBCLASS_15
-};
-
-// Font family 9 subclass names
-PSZ g_FamilySubclasses9[] = {
-    FF_SUBCLASS_0,   FF_SUBCLASS_9_1, FF_SUBCLASS_9_2, FF_SUBCLASS_9_3,
-    FF_SUBCLASS_9_4, FF_SUBCLASS_15
-};
-
-// Font family 10 subclass names
-PSZ g_FamilySubclasses10[] = {
-    FF_SUBCLASS_0,    FF_SUBCLASS_10_1, FF_SUBCLASS_10_2, FF_SUBCLASS_10_3,
-    FF_SUBCLASS_10_4, FF_SUBCLASS_10_5, FF_SUBCLASS_10_6, FF_SUBCLASS_10_7,
-    FF_SUBCLASS_10_8, FF_SUBCLASS_15
-};
-
-// Font family 12 subclass names
-PSZ g_FamilySubclasses12[] = {
-    FF_SUBCLASS_0, FF_SUBCLASS_12_3, FF_SUBCLASS_12_6, FF_SUBCLASS_12_7,
-    FF_SUBCLASS_15
-};
-
-
-// ----------------------------------------------------------------------------
 // FUNCTION PROTOTYPES
 
-void             AddComponentFont( HWND hwnd, PCFEGLOBAL pGlobal );
-void             AddUniFont( HWND hwnd, PCFEGLOBAL pGlobal );
 void             CentreWindow( HWND hwnd, HWND hwndRel );
 void             CloseFontFile( HWND hwnd, PCFEGLOBAL pGlobal );
-MRESULT EXPENTRY CompFontDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
 void             DeriveUniFontMetrics( PUNIFONTMETRICS pUFM, PFONTMETRICS pFM );
 BOOL             EmboldenWindowText( HWND hwndCtl, HWND hwndUse );
 LONG             GetCurrentDPI( HWND hwnd );
@@ -444,16 +313,35 @@ void             GlyphRangeDialog( HWND hwnd, PCFPROPS pCompFont, BOOL fEdit );
 MRESULT EXPENTRY ImportDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
 MRESULT EXPENTRY MainDialogProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
 MRESULT EXPENTRY ProductInfoDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
-void             PopulateMetricFlags( HWND hwndCnr, PCFPROPS pProps );
-void             PopulateValues_CMB( HWND hwnd, PCFEGLOBAL pGlobal );
-void             PopulateValues_ABR( HWND hwnd, PCFEGLOBAL pGlobal );
+void             PopulateMetricFlags( HWND hwndCnr, PFONTASSOCIATION pFA );
 MRESULT EXPENTRY RangeDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
 USHORT           ReadFontFile( HWND hwnd, PSZ pszfile, PCFEGLOBAL pGlobal  );
 BOOL             SelectInstalledFont( HWND hwnd, PSZ pszFacename );
+void             wrap_free( void **address );
+
+
+// From combined.c
+void             AddComponentFont( HWND hwnd, PCFEGLOBAL pGlobal );
+MRESULT EXPENTRY CompFontDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
+void             EditComponentFont( HWND hwnd, PCFEGLOBAL pGlobal, ULONG ulAssoc );
+BOOL             ParseFont_CMB( PGENERICRECORD pStart, PCFEGLOBAL pGlobal );
+void             PopulateValues_CMB( HWND hwnd, PCFEGLOBAL pGlobal );
 void             SetupCnrCF( HWND hwnd );
+void             ComponentListDelete( PCFEGLOBAL pGlobal, ULONG ulIndex );
+void             ComponentListFree( PCFEGLOBAL pGlobal );
+void             ComponentListInit( PCFEGLOBAL pGlobal, PCOMPFONTHEADER pComponents );
+BOOL             ComponentListInsert( PCFEGLOBAL pGlobal, PFONTASSOCIATION pCompFont, ULONG ulIndex );
+
+
+// From abr.c
+BOOL             ParseFont_ABR( PGENERICRECORD pStart, PCFEGLOBAL pGlobal );
+void             PopulateValues_ABR( HWND hwnd, PCFEGLOBAL pGlobal );
 void             SetupCnrAB( HWND hwnd );
+
+
+// From unifont.c
+void             AddUniFont( HWND hwnd, PCFEGLOBAL pGlobal );
+void             PopulateValues_UNI( HWND hwnd, PCFEGLOBAL pGlobal );
 void             SetupCnrUF( HWND hwnd );
 MRESULT EXPENTRY UniFontDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
-
-
 
