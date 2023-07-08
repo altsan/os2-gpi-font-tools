@@ -304,10 +304,11 @@ typedef UNIFONTMETRICS *PUNIFONTMETRICS;
 
 /* GPI categorizes fonts in 3 types according to character increment definition:
  * Type 1 : Fixed-width font
- * Type 2 : Proportional-width font with each character increment defined as
+ * Type 2 : Proportional-width font with each character width defined as
  *          one value in the character definition.
- * Type 3 : Proportional-width font with each character increment defined in
- *          terms of: a_space + b_space + c_space
+ * Type 3 : Proportional-width font with each character width defined as:
+ *          a_space (left bearing) + b_space (glyph width) + c_space (right bearing)
+ * All three types have fixed character cell height.
  *
  * Each type is required to have specific values of flFontDef and flCharDef
  * in the font definition header.  These values are defined below.
@@ -326,61 +327,46 @@ typedef UNIFONTMETRICS *PUNIFONTMETRICS;
 #define UNIFONTDEF_TYPE_3_CHARDEF_SIZE  10
 
 typedef struct _UNIFONTDEFINITIONHEADER {
-    UCHAR  Identity[4];         /* Must be equal to 0x554E4648 ('UNFH').    */
+    UCHAR  Identity[4];     /* Must be equal to 0x554E4648 ('UNFH').         */
 
-    ULONG  ulSize;              /* Size of this structure in bytes.         */
+    ULONG  ulSize;          /* Size of this structure in bytes.              */
 
-    ULONG  flFontDef;           /* Flags indicating which fields are present in the font definition header.                                             */
-                                /*   Bit 0  1 = character width is defined in the font definition header (fixed pitch)                                  */
-                                /*          0 = character width is not defined in the font definition header                                            */
-                                /*   Bit 1  1 = character height is defined in the font definition header (same for all characters)                     */
-                                /*          0 = character height is not defined in the font definition header                                           */
-                                /*   Bit 2  1 = character increment is defined in the font definition header (same for all characters)                  */
-                                /*          0 = character increment is not defined in the font definition header                                        */
-                                /*   Bit 3  1 = a_space is defined in the font definition header (same for all characters)                              */
-                                /*          0 = a_space is not defined in the font definition header (non abc_space font or defined for each character) */
-                                /*   Bit 4  1 = b_space is defined in the font definition header (same for all characters)                              */
-                                /*          0 = b_space is not defined in the font definition header (non abc_space font or defined for each character) */
-                                /*   Bit 5  1 = c_space is defined in the font definition header (same for all characters)                              */
-                                /*          0 = c_space is not defined in the font definition header (non abc_space font or defined for each character) */
-                                /*   Bit 6  1 = baseline offset is defined in the font definition header (same  for all characters)                         */
-                                /*          0 = baseline offset is not defined in the font definition header                                                */
+    ULONG  flFontDef;       /* Flags indicating which fields are present     */
+                            /* in the font definition header.  Any attribute */
+                            /* defined in the font definition header will be */
+                            /* the same for all characters (in all groups)   */
+                            /* in the font.                                  */
+                            /*   0x01  Character width (Type 1 font)         */
+                            /*   0x02  Character height (must be 1)          */
+                            /*   0x04  Character increment                   */
+                            /*   0x08  Character a-space (Type 3 font)       */
+                            /*   0x10  Character b-space (Type 3 font)       */
+                            /*   0x20  Character c-space (Type 3 font)       */
+                            /*   0x40  Character baseline offset (must be 1) */
 
-    ULONG  flGroupDef;          /* Flags indicating which fields are present on a per character group basis. Each flag is valid only when the           */
-                                /* corresponding flFontDef flag bit is 1.                                                                               */
-                                /*   Bit 0  1 = character width is defined in the character group definitions (defined for each character group)        */
-                                /*          0 = character width is not defined in the character group definition (same for all characters)              */
-                                /*   Bit 1  1 = character height is defined in the character group definitions (defined for each character group)       */
-                                /*          0 = character height is not defined in the character group definitions (same for all characters)            */
-                                /*   Bit 2  1 = character increment is defined in the the character group definitions (defined for each character group)*/
-                                /*          0 = character increment is not defined in the character group definitions (same for all characters)         */
-                                /*   Bit 3  1 = a_space is defined in the character group definitions (defined for each character group)                */
-                                /*          0 = a_space is not defined in the character group definitions (same for all characters)                     */
-                                /*   Bit 4  1 = b_space is defined in the character group definitions (defined for each character group)                */
-                                /*          0 = b_space is not defined in the character group definitions (same for all characters)                     */
-                                /*   Bit 5  1 = c_space is defined in the character group definitions (defined for each character group)                */
-                                /*          0 = c_space is not defined in the character group definitions (same for all characters)                     */
-                                /*   Bit 6  1 = baseline offset is defined in the character group definitions (defined for each character group)            */
-                                /*          0 = baseline offset is not defined in the character group definitions (same for all characters)                 */
+    ULONG  flGroupDef;      /* Flags indicating which fields are present in  */
+                            /* each character group.  Each flag is valid     */
+                            /* only when the corresponding flFontDef flag    */
+                            /* bit is also 1.  (In OS/2 fonts all bits are   */
+                            /* always 0.)                                    */
+                            /*   0x01  Character width                       */
+                            /*   0x02  Character height                      */
+                            /*   0x04  Character increment                   */
+                            /*   0x08  Character a-space                     */
+                            /*   0x10  Character b-space                     */
+                            /*   0x20  Character c-space                     */
+                            /*   0x40  Character baseline offset             */
 
-    ULONG  flCharDef;           /* Flags indicating which fields are present on a per character basis.                                                  */
-                                /*   Bit 0  1 = character width is defined in the character definitions (defined for each character definition)         */
-                                /*          0 = character width is not defined in the character definitions                                             */
-                                /*   Bit 1  1 = character height is defined in the character definitions (defined for each character definition)        */
-                                /*          0 = character height is not defined in the character definitions                                            */
-                                /*   Bit 2  1 = character increment is defined in the the character definitions (defined for each character definition) */
-                                /*          0 = character increment is not defined in the character definitions                                         */
-                                /*   Bit 3  1 = a_space is defined in the character definitions (defined for each character definition)                 */
-                                /*          0 = a_space is not defined in the character definitions                                                     */
-                                /*   Bit 4  1 = b_space is defined in the character definitions (defined for each character definition)                 */
-                                /*          0 = b_space is not defined in the character definitions                                                     */
-                                /*   Bit 5  1 = c_space is defined in the character definitions (defined for each character definition)                 */
-                                /*          0 = c_space is not defined in the character definitions                                                     */
-                                /*   Bit 6  1 = baseline offset is defined in the character definitions (defined for each character definition)             */
-                                /*          0 = baseline offset is not defined in the character definitions                                                 */
-                                /*   Bit 7  1 = offset to glyph is defined                                                                              */
-                                /*          0 = offset to glyph is not defined                                                                          */
-                                /*   Bit 7 must be ON for OS/2 4.0.                                                                                     */
+    ULONG  flCharDef;       /* Flags indicating which fields are present on  */
+                            /* a per-character basis.                        */
+                            /*   0x01  Character width                       */
+                            /*   0x02  Character height                      */
+                            /*   0x04  Character increment                   */
+                            /*   0x08  Character a-space                     */
+                            /*   0x10  Character b-space                     */
+                            /*   0x20  Character c-space                     */
+                            /*   0x40  Character baseline offset             */
+                            /*   0x80  Offset to glyph data (must be 1)      */
 
     ULONG  ulCharDefSize;       /* Indicates the length in bytes of each    */
                                 /* character definition record (the per     */

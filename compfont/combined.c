@@ -70,11 +70,12 @@ BOOL ParseFont_CMB( PGENERICRECORD pStart, PCFEGLOBAL pGlobal )
                         0;
     pFileEnd        = (PCOMBFONTEND)( (PBYTE) pFileComponents + pFileComponents->ulSize + cbCompArray );
 
+    pWorkingFont = &(pGlobal->font.combined);
+
     // Allocate separate new buffers for each portion of the file
     // so we can more easily add or remove parts later
 
-    pWorkingFont = &(pGlobal->font.combined);
-
+#if 0
     pWorkingFont->pSignature = (PCOMBFONTSIGNATURE) malloc( pFileSig->ulSize );
     if ( !pWorkingFont->pSignature )
         return FALSE;
@@ -83,12 +84,15 @@ BOOL ParseFont_CMB( PGENERICRECORD pStart, PCFEGLOBAL pGlobal )
         wrap_free( (PPVOID) &(pWorkingFont->pSignature) );
         return FALSE;
     }
+    ComponentListInit( pWorkingFont, pFileComponents );
+    /*
     pWorkingFont->pComponents = (PCOMPFONTHEADER) malloc( pFileComponents->ulSize + cbCompArray );
     if ( !pWorkingFont->pComponents ) {
         wrap_free( (PPVOID) &(pWorkingFont->pSignature) );
         wrap_free( (PPVOID) &(pWorkingFont->pMetrics) );
         return FALSE;
     }
+    */
     pWorkingFont->pEnd = (PCOMBFONTEND) malloc( pFileEnd->ulSize );
     if ( !pWorkingFont->pEnd ) {
         wrap_free( (PPVOID) &(pWorkingFont->pSignature) );
@@ -98,11 +102,120 @@ BOOL ParseFont_CMB( PGENERICRECORD pStart, PCFEGLOBAL pGlobal )
     }
     memcpy( pWorkingFont->pSignature, pFileSig, pFileSig->ulSize );
     memcpy( pWorkingFont->pMetrics, pFileMetrics, pFileMetrics->ulSize );
+    /*
     memcpy( pWorkingFont->pComponents, pFileComponents,
             pFileComponents->ulSize + cbCompArray );
+    */
     memcpy( pWorkingFont->pEnd, pFileEnd, pFileEnd->ulSize );
+#else
+    if ( InitFontStructure_CMB( pGlobal, pFileSig->ulSize,
+                                pFileMetrics->ulSize, pFileEnd->ulSize ) &&
+         ComponentListInit( pWorkingFont, pFileComponents ))
+    {
+        // Create the font components linked list
+        /*
+        pWorkingFont->pComponents = (PCOMPFONTHEADER) malloc( pFileComponents->ulSize + cbCompArray );
+        if ( !pWorkingFont->pComponents ) {
+            wrap_free( (PPVOID) &(pWorkingFont->pSignature) );
+            wrap_free( (PPVOID) &(pWorkingFont->pMetrics) );
+            wrap_free( (PPVOID) &(pWorkingFont->pEnd) );
+            return FALSE;
+        }
+        */
+        memcpy( pWorkingFont->pSignature, pFileSig, pFileSig->ulSize );
+        memcpy( pWorkingFont->pMetrics, pFileMetrics, pFileMetrics->ulSize );
+        memcpy( pWorkingFont->pEnd, pFileEnd, pFileEnd->ulSize );
+    }
+    else {
+        wrap_free( (PPVOID) &(pWorkingFont->pSignature) );
+        wrap_free( (PPVOID) &(pWorkingFont->pMetrics) );
+        wrap_free( (PPVOID) &(pWorkingFont->pEnd) );
+        return FALSE;
+    }
+
+#endif
+
+    pGlobal->usType = FONT_TYPE_CMB;
 
     return TRUE;
+}
+
+
+/* ------------------------------------------------------------------------- *
+ * InitFontStructure_CMB                                                     *
+ *                                                                           *
+ * Allocates the global font data structures for a Combined font, except for *
+ * the component font linked list (which is left empty for now).             *
+ *                                                                           *
+ * ARGUMENTS:                                                                *
+ *   PGENERICRECORD pStart: pointer to the start of the font                 *
+ *   PCFEGLOBAL pGlobal: pointer to global program data.                     *
+ *                                                                           *
+ * RETURNS: BOOL                                                             *
+ *   TRUE on success, FALSE if an error occurred.                            *
+ * ------------------------------------------------------------------------- */
+BOOL InitFontStructure_CMB( PCFEGLOBAL pGlobal, ULONG cbSig, ULONG cbMetrics, ULONG cbEnd )
+{
+    PCOMBFONTFILE pFontData;
+
+    pFontData = &(pGlobal->font.combined);
+    pFontData->pSignature = (PCOMBFONTSIGNATURE) calloc( cbSig, 1 );
+    if ( !pFontData->pSignature )
+        return FALSE;
+
+    pFontData->pMetrics = (PCOMBFONTMETRICS) calloc( cbMetrics, 1 );
+    if ( !pFontData->pMetrics ) {
+        wrap_free( (PPVOID) &(pFontData->pSignature) );
+        return FALSE;
+    }
+
+    pFontData->pEnd = (PCOMBFONTEND) calloc( cbEnd, 1 );
+    if ( !pFontData->pEnd ) {
+        wrap_free( (PPVOID) &(pFontData->pSignature) );
+        wrap_free( (PPVOID) &(pFontData->pMetrics) );
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+
+/* ------------------------------------------------------------------------- *
+ * NewFont_CMB                                                               *
+ *                                                                           *
+ * Create a new, empty Combined font file.                                   *
+ * ------------------------------------------------------------------------- */
+BOOL NewFont_CMB( HWND hwnd, PCFEGLOBAL pGlobal )
+{
+    // Set up the UI for Combined font if it isn't already
+    if ( pGlobal->usType != FONT_TYPE_CMB )
+    {
+        WinSendDlgItemMsg( hwnd, IDD_COMPONENTS,
+                           CM_REMOVEDETAILFIELDINFO, MPVOID,
+                           MPFROM2SHORT( 0, CMA_INVALIDATE | CMA_FREE ));
+        pGlobal->usType = FONT_TYPE_CMB;
+        SetupWindowCF( hwnd );
+        SetupCnrCF( hwnd );
+    }
+
+    return InitFontStructure_CMB( pGlobal,
+                                  sizeof(COMBFONTSIGNATURE),
+                                  sizeof(COMBFONTMETRICS),
+                                  sizeof(COMBFONTEND) );
+}
+
+
+/* ------------------------------------------------------------------------- *
+ * SetupWindowCF                                                             *
+ *                                                                           *
+ * Set up the window UI controls for Combined font format.                   *
+ * ------------------------------------------------------------------------- */
+void SetupWindowCF( HWND hwnd )
+{
+    WinShowWindow( WinWindowFromID( hwnd, IDD_FACEGROUP ), TRUE );
+    WinShowWindow( WinWindowFromID( hwnd, IDD_FACETEXT ),  TRUE );
+    WinShowWindow( WinWindowFromID( hwnd, IDD_FACENAME ),  TRUE );
+    WinShowWindow( WinWindowFromID( hwnd, ID_METRICS ),    TRUE );
 }
 
 
@@ -449,7 +562,6 @@ void AddComponentFont( HWND hwnd, PCFEGLOBAL pGlobal )
 }
 
 
-
 /* ------------------------------------------------------------------------- *
  * EditComponentFont                                                         *
  *                                                                           *
@@ -465,19 +577,23 @@ void AddComponentFont( HWND hwnd, PCFEGLOBAL pGlobal )
 void EditComponentFont( HWND hwnd, PCFEGLOBAL pGlobal, ULONG ulAssoc )
 {
     CFPROPS          cfprops;
+    PFONTASSOCLIST   pNode;
     PFONTASSOCIATION pAssocCopy,    // a working copy of the current association
-                     pAssocOrig;    // pointer to the current font association
+                     pAssocOrig;    // pointer to the original font association
     ULONG            cbFA;
-    APIRET           rc;
+    ULONG            i;
 
-    pAssocOrig = &(pGlobal->font.combined.pComponents->CompFont[ ulAssoc ].CompFontAssoc);
+    pNode = pGlobal->font.combined.pFontList;
+    for ( i = 0; pNode->pNext && (i < ulAssoc); i++ )
+        pNode = pNode->pNext;
+    if ( i < ulAssoc ) return;  // error, bad index
+    pAssocOrig = &(pNode->font);
 
     cbFA = sizeof( FONTASSOCIATION ) +
            ( pAssocOrig->ulGlyphRanges * sizeof( FONTASSOCGLYPHRANGE )) -
            sizeof( FONTASSOCGLYPHRANGE );
 
-    rc = DosAllocMem( (PPVOID) &pAssocCopy, cbFA, PAG_READ | PAG_WRITE | PAG_COMMIT );
-    if ( rc != NO_ERROR ) {
+    if (( pAssocCopy = (PFONTASSOCIATION) malloc( cbFA )) == NULL ) {
         ErrorPopup("Memory allocation error.");
         return;
     }
@@ -493,7 +609,8 @@ void EditComponentFont( HWND hwnd, PCFEGLOBAL pGlobal, ULONG ulAssoc )
                NULLHANDLE, IDD_COMPFONT, &cfprops );
 
     // ..etc
-    DosFreeMem( pAssocCopy );
+    // TODO copy pAssocCopy back into pAssocOrig if modified
+    free( pAssocCopy );
 }
 
 
@@ -511,8 +628,9 @@ void EditComponentFont( HWND hwnd, PCFEGLOBAL pGlobal, ULONG ulAssoc )
  * ------------------------------------------------------------------------- */
 void PopulateValues_CMB( HWND hwnd, PCFEGLOBAL pGlobal )
 {
-    PUNIFONTMETRICS pUFM;       // pointer to Uni-font metrics data
-    PULONG          pulSig;     // pointer to current structure signature
+    PUNIFONTMETRICS pUFM;      // pointer to Uni-font metrics data
+    PFONTASSOCLIST  pNode;     // current node in font association linked list
+    PULONG          pulSig;    // pointer to metrics structure signature
     PSZ             pszFamily,
                     pszFace;
     ULONG           ulCB,
@@ -521,7 +639,6 @@ void PopulateValues_CMB( HWND hwnd, PCFEGLOBAL pGlobal )
     PCFRECORD       pRec,
                     pFirst;
     RECORDINSERT    ri;
-    PCOMPFONT       pComp;
     SHORT           sIdx;
     CHAR            szNum[ 5 ];
 
@@ -565,39 +682,40 @@ void PopulateValues_CMB( HWND hwnd, PCFEGLOBAL pGlobal )
         ulCB = sizeof( CFRECORD ) - sizeof( MINIRECORDCORE );
         pRec = (PCFRECORD) WinSendMsg( hwndCnr, CM_ALLOCRECORD,
                                        MPFROMLONG( ulCB ),
-                                       MPFROMLONG( pGlobal->font.combined.pComponents->ulCmpFonts ));
+                                       MPFROMLONG( pGlobal->font.combined.ulCmpFonts ));
         pFirst = pRec;
         ulCB = sizeof( MINIRECORDCORE );
 
-        for ( i = 0; i < pGlobal->font.combined.pComponents->ulCmpFonts; i++ ) {
-            pComp = pGlobal->font.combined.pComponents->CompFont + i;
+        for ( i = 0, pNode = pGlobal->font.combined.pFontList; pNode; i++ ) {
+            //pComp = pGlobal->font.combined.pComponents->CompFont + i;
             pRec->pszFace      = (PSZ) calloc( FACESIZE, 1 );
             pRec->pszRanges    = (PSZ) calloc( SZRANGES_MAXZ, 1 );
             pRec->pszGlyphList = (PSZ) calloc( GLYPHNAMESIZE, 1 );
             pRec->pszFlags     = (PSZ) calloc( SZFLAGS_MAXZ, 1 );
-            strcpy( pRec->pszFace, pComp->CompFontAssoc.unifm.ifiMetrics.szFacename );
-            if ( pComp->CompFontAssoc.ulGlyphRanges > 1 )
-                sprintf( pRec->pszRanges, "(%u ranges)", pComp->CompFontAssoc.ulGlyphRanges );
-            else if ( pComp->CompFontAssoc.ulGlyphRanges == 1 ) {
+            strcpy( pRec->pszFace, pNode->font.unifm.ifiMetrics.szFacename );
+            if ( pNode->font.ulGlyphRanges > 1 )
+                sprintf( pRec->pszRanges, "(%u ranges)", pNode->font.ulGlyphRanges );
+            else if ( pNode->font.ulGlyphRanges == 1 ) {
                 sprintf( pRec->pszRanges, "%u - %u",
-                         pComp->CompFontAssoc.GlyphRange[0].giStart,
-                         pComp->CompFontAssoc.GlyphRange[0].giEnd );
+                         pNode->font.GlyphRange[0].giStart,
+                         pNode->font.GlyphRange[0].giEnd );
             }
             else
                 strcpy( pRec->pszRanges, "*");
-            strcpy( pRec->pszGlyphList, pComp->CompFontAssoc.unifm.ifiMetrics.szGlyphlistName );
-            sprintf( pRec->pszFlags, "0x%X", pComp->CompFontAssoc.flFlags );
+            strcpy( pRec->pszGlyphList, pNode->font.unifm.ifiMetrics.szGlyphlistName );
+            sprintf( pRec->pszFlags, "0x%X", pNode->font.flFlags );
             pRec->record.cb = ulCB;
             pRec->record.pszIcon = pRec->pszFace;
             pRec->ulIndex = i;
             pRec = (PCFRECORD) pRec->record.preccNextRecord;
+            pNode = pNode->pNext;
         }
         ri.cb                = sizeof( RECORDINSERT );
         ri.pRecordOrder      = (PRECORDCORE) CMA_END;
         ri.pRecordParent     = NULL;
         ri.zOrder            = (ULONG) CMA_TOP;
         ri.fInvalidateRecord = TRUE;
-        ri.cRecordsInsert    = pGlobal->font.combined.pComponents->ulCmpFonts;
+        ri.cRecordsInsert    = pGlobal->font.combined.ulCmpFonts;
         WinSendMsg( hwndCnr, CM_INSERTRECORD, MPFROMP( pFirst ), MPFROMP( &ri ));
     }
 }
@@ -672,36 +790,45 @@ void SetupCnrCF( HWND hwnd )
     finsert.cFieldInfoInsert     = 3;
     WinSendMsg( hwndCnr, CM_INSERTDETAILFIELDINFO,
                 MPFROMP( pFld1st ), MPFROMP( &finsert ));
-
 }
 
 
 /* ------------------------------------------------------------------------- *
  * ComponentListDelete                                                       *
  *                                                                           *
- * Delete a font association from the linked list.                           *
+ * Delete a font association from a combined font's linked list.             *
  *                                                                           *
  * ARGUMENTS:                                                                *
- *   PCFEGLOBAL pGlobal: pointer to global data.                             *
- *   ULONG      ulIndex: list index of the item to delete.                   *
+ *   PCOMBFONTFILE pCombFont: pointer to combined font data.                 *
+ *   ULONG         ulIndex  : list index of the item to delete.              *
  *                                                                           *
  * RETURNS: N/A                                                              *
  * ------------------------------------------------------------------------- */
-void ComponentListDelete( PCFEGLOBAL pGlobal, ULONG ulIndex )
+void ComponentListDelete( PCOMBFONTFILE pCombFont, ULONG ulIndex )
 {
     PFONTASSOCLIST pNode,
                    pTemp;
     ULONG          i;
 
-    pNode = pGlobal->font.combined.pFontList;
+    pNode = pCombFont->pFontList;
     if ( pNode == NULL ) return;
 
-    for ( i = 0; pNode->pNext && ( i < ulIndex ); i++ ) pNode = pNode->pNext;
-    if ( i < ulIndex ) return;
+    if ( ulIndex == 0 ) {
+        // delete first entry
+        pCombFont->pFontList = pNode->pNext;
+        pTemp = pNode;
+    }
+    else {
+        // delete other entry
+        for ( i = 0; pNode->pNext && ( i < ulIndex ); i++ )
+            pNode = pNode->pNext;
+        if ( i < ulIndex ) return;
+        pTemp = pNode->pNext;
+        pNode->pNext = pTemp->pNext;
+    }
+    free( pTemp );
+    pCombFont->ulCmpFonts--;
 
-    pTemp = pNode->pNext;
-    pNode->pNext = pTemp->pNext;
-    DosFreeMem( pTemp );
 }
 
 
@@ -711,21 +838,23 @@ void ComponentListDelete( PCFEGLOBAL pGlobal, ULONG ulIndex )
  * Free the linked list of component font associations.                      *
  *                                                                           *
  * ARGUMENTS:                                                                *
- *   PCFEGLOBAL pGlobal: pointer to global data.                             *
+ *   PCOMBFONTFILE pCombFont: pointer to combined font data.                 *
  *                                                                           *
  * RETURNS: N/A                                                              *
  * ------------------------------------------------------------------------- */
-void ComponentListFree( PCFEGLOBAL pGlobal )
+void ComponentListFree( PCOMBFONTFILE pCombFont )
 {
-    PFONTASSOCLIST pNode;
+    PFONTASSOCLIST pNode,
+                   pTemp;
 
-    pNode = pGlobal->font.combined.pFontList;
-    if ( !pNode ) return;
-
+    pNode = pCombFont->pFontList;
     while ( pNode ) {
-        DosFreeMem( pNode );
+        pTemp = pNode;
         pNode = pNode->pNext;
+        free( pTemp );
     }
+    pCombFont->pFontList = NULL;
+    pCombFont->ulCmpFonts = 0;
 }
 
 
@@ -733,54 +862,55 @@ void ComponentListFree( PCFEGLOBAL pGlobal )
  * ComponentListInit                                                         *
  *                                                                           *
  * Copy the array of component font associations from a parsed combined font *
- * file into a linked list (stored in the global data) which is easier for   *
- * us to modify as needed.                                                   *
+ * file into a linked list which is easier for us to modify as needed.       *
  *                                                                           *
  * ARGUMENTS:                                                                *
- *   PCFEGLOBAL      pGlobal    : pointer to global data.                    *
+ *   PCOMBFONTFILE   pCombFont  : pointer to combined font data.             *
  *   PCOMPFONTHEADER pComponents: original array of components being copied. *
  *                                                                           *
- * RETURNS: N/A                                                              *
+ * RETURNS: BOOL                                                             *
  * ------------------------------------------------------------------------- */
-void ComponentListInit( PCFEGLOBAL pGlobal, PCOMPFONTHEADER pComponents )
+BOOL ComponentListInit( PCOMBFONTFILE pCombFont, PCOMPFONTHEADER pComponents )
 {
     PFONTASSOCIATION pFA;
     PFONTASSOCLIST   pNode,
                      pNew;
     ULONG            cbFA,
                      i;
-    APIRET           rc;
 
 
-    if ( !pGlobal->font.combined.pComponents->ulCmpFonts ) return;
+    if ( !pComponents->ulCmpFonts ) return FALSE;
 
-    pFA  = &(pGlobal->font.combined.pComponents->CompFont[ 0 ].CompFontAssoc);
+    pFA  = &(pComponents->CompFont[ 0 ].CompFontAssoc);
     cbFA = sizeof( FONTASSOCIATION ) +
            ( pFA->ulGlyphRanges * sizeof( FONTASSOCGLYPHRANGE )) -
            sizeof( FONTASSOCGLYPHRANGE );
-    rc = DosAllocMem( (PPVOID) &pNode, cbFA, PAG_READ | PAG_WRITE | PAG_COMMIT );
-    if ( rc != NO_ERROR ) {
+    if (( pNode = (PFONTASSOCLIST) malloc( cbFA )) == NULL ) {
         ErrorPopup("Failed to allocate memory for component font structure.");
-        return;
+        return FALSE;
     }
     memcpy( &(pNode->font), pFA, cbFA );
-    pGlobal->font.combined.pFontList = pNode;
 
-    for ( i = 1; i < pGlobal->font.combined.pComponents->ulCmpFonts; i++ ) {
-        pFA  = &(pGlobal->font.combined.pComponents->CompFont[ i ].CompFontAssoc);
-        cbFA = sizeof( FONTASSOCIATION ) +
-               ( pFA->ulGlyphRanges * sizeof( FONTASSOCGLYPHRANGE )) -
-               sizeof( FONTASSOCGLYPHRANGE );
-        rc = DosAllocMem( (PPVOID) &pNew, cbFA, PAG_READ | PAG_WRITE | PAG_COMMIT );
-        if ( rc != NO_ERROR ) {
+    pCombFont->pFontList = pNode;
+
+    for ( i = 1; i < pComponents->ulCmpFonts; i++ ) {
+        pFA  = &(pComponents->CompFont[ i ].CompFontAssoc);
+        cbFA = sizeof( FONTASSOCIATION )
+                + ( pFA->ulGlyphRanges * sizeof( FONTASSOCGLYPHRANGE ))
+                - sizeof( FONTASSOCGLYPHRANGE );
+        if (( pNew = (PFONTASSOCLIST) malloc( cbFA )) == NULL ) {
             ErrorPopup("Failed to allocate memory for component font structure.");
-            return;
+            pCombFont->ulCmpFonts = i - 1;
+            return FALSE;
         }
         pNode->pNext = pNew;
         pNew->pNext  = NULL;
         memcpy( &(pNew->font), pFA, cbFA );
         pNode = pNew;
     }
+
+    pCombFont->ulCmpFonts = pComponents->ulCmpFonts;
+    return TRUE;
 }
 
 
@@ -790,37 +920,47 @@ void ComponentListInit( PCFEGLOBAL pGlobal, PCOMPFONTHEADER pComponents )
  * Insert a new font association into the linked list.                       *
  *                                                                           *
  * ARGUMENTS:                                                                *
- *   PCFEGLOBAL       pGlobal  : pointer to global data.                     *
  *   PFONTASSOCIATION pCompFont: the new font association to add.            *
- *   ULONG            ulIndex  : list index of the newly added item .        *
+ *   ULONG            ulIndex  : list index of the newly added item.         *
  *                                                                           *
  * RETURNS: BOOL                                                             *
  * ------------------------------------------------------------------------- */
-BOOL ComponentListInsert( PCFEGLOBAL pGlobal, PFONTASSOCIATION pCompFont, ULONG ulIndex )
+BOOL ComponentListInsert( PCOMBFONTFILE pCombFont, PFONTASSOCIATION pCompFont, ULONG ulIndex )
 {
     PFONTASSOCLIST  pNode,
                     pNew;
     ULONG           cb,
                     i;
-    APIRET          rc;
 
-    cb = sizeof( FONTASSOCIATION ) +
-         ( pCompFont->ulGlyphRanges * sizeof( FONTASSOCGLYPHRANGE )) -
-         sizeof( FONTASSOCGLYPHRANGE );
-    rc = DosAllocMem( (PPVOID) &pNew, cb, PAG_READ | PAG_WRITE | PAG_COMMIT );
-    if ( rc != NO_ERROR ) {
+    cb = sizeof( FONTASSOCIATION )
+          + ( pCompFont->ulGlyphRanges * sizeof( FONTASSOCGLYPHRANGE ))
+          - sizeof( FONTASSOCGLYPHRANGE );
+    if (( pNew = (PFONTASSOCLIST) malloc( cb )) == NULL ) {
         ErrorPopup("Failed to allocate memory for component font structure.");
         return FALSE;
     }
     memcpy( &(pNew->font), pCompFont, cb );
-    if ( pGlobal->font.combined.pFontList == NULL ) {
+
+    pCombFont->ulCmpFonts++;
+
+    // empty list
+    if ( pCombFont->pFontList == NULL ) {
         pNew->pNext = NULL;
-        pGlobal->font.combined.pFontList = pNew;
+        pCombFont->pFontList = pNew;
         return TRUE;
     }
 
-    pNode = pGlobal->font.combined.pFontList;
-    for ( i = 0; pNode->pNext && ( i < ulIndex ); i++ ) pNode = pNode->pNext;
+    // existing list, new first entry
+    pNode = pCombFont->pFontList;
+    if ( ulIndex == 0 ) {
+        pNew->pNext = pNode;
+        pCombFont->pFontList = pNew;
+        return TRUE;
+    }
+
+    // existing list, other entry
+    for ( i = 0; pNode->pNext && ( i < ulIndex ); i++ )
+        pNode = pNode->pNext;
     pNew->pNext = pNode->pNext;
     pNode->pNext = pNew;
 

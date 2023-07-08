@@ -53,6 +53,10 @@
 #define IDD_LICENCED                108
 #define IDD_FACEGROUP               110
 #define IDD_FACETEXT                111
+#define IDD_FONTGROUP               120
+#define IDD_NAMETEXT                121
+#define IDD_CLASSTEXT               122
+#define IDD_REGTEXT                 123
 
 #define IDD_COMPFONT                200
 #define IDD_FONTNAME                201

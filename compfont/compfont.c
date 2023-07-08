@@ -196,7 +196,11 @@ int main( int argc, char *argv[] )
                  ERRORIDERROR( WinGetLastError( global.hab )));
         bInitErr = TRUE;
     }
-    global.usType = FONT_TYPE_CMB;
+//    global.usType = FONT_TYPE_CMB;
+
+    // pass filename specified on command line, if any
+    if ( pszOpen )
+        strncpy( global.szCurrentFile, pszOpen, CCHMAXPATH );
 
     // Load the main window dialog
     if ( !bInitErr && ( global.hwndMain = WinLoadDlg( HWND_DESKTOP, HWND_DESKTOP,
@@ -223,21 +227,10 @@ int main( int argc, char *argv[] )
         // save a pointer to the global data
         WinSetWindowPtr( global.hwndMain, 0, &global );
 
-        if ( pszOpen && ReadFontFile( global.hwndMain, pszOpen, &global )) {
-            switch ( global.usType ) {
-                case FONT_TYPE_CMB:
-                    PopulateValues_CMB( global.hwndMain, &global );
-                    break;
-                case FONT_TYPE_ABR:
-                    WinShowWindow( WinWindowFromID( global.hwndMain, IDD_FACEGROUP ), FALSE );
-                    WinShowWindow( WinWindowFromID( global.hwndMain, IDD_FACETEXT ),  FALSE );
-                    WinShowWindow( WinWindowFromID( global.hwndMain, IDD_FACENAME ),  FALSE );
-                    WinShowWindow( WinWindowFromID( global.hwndMain, ID_METRICS ),    FALSE );
-                    SetupCnrAB( global.hwndMain );
-                    PopulateValues_ABR( global.hwndMain, &global );
-                    break;
-            }
-        }
+        if ( pszOpen )
+            WinPostMsg( global.hwndMain, WM_READFILE, MPFROMP( pszOpen ), MPVOID );
+        else
+            NewFontFile( global.hwndMain, &global, FONT_TYPE_CMB );
 
         // main program loop
         while ( WinGetMsg( global.hab, &qmsg, 0, 0, 0 ))
@@ -267,7 +260,7 @@ MRESULT EXPENTRY MainDialogProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
     HPOINTER   hIcon;
     PSWP       pswp;
     PCFRECORD  pRec;
-    CFPROPS    cfprops;
+//    CFPROPS    cfprops;
     SHORT      sIdx;
     USHORT     i,
                usCount,
@@ -318,57 +311,56 @@ MRESULT EXPENTRY MainDialogProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
             WinSendDlgItemMsg( hwnd, IDD_FONTCLASS, LM_SELECTITEM,
                                MPFROMSHORT( 0 ), MPFROMSHORT( TRUE ));
 
-            SetupCnrCF( hwnd );
             EmboldenWindowText( WinWindowFromID( hwnd, IDD_STATUS ), NULLHANDLE );
 
             CentreWindow( hwnd, NULLHANDLE );
             WinShowWindow( hwnd, TRUE );
 
             return (MRESULT) FALSE;
-        // WM_INITDLG
+        // WM_INITDLG end
+
+
+        // WM_READFILE: Custom message used to open and parse a font file
+        //
+        case WM_READFILE:                   // mp1 = filename
+            if ( ReadFontFile( hwnd, (PSZ) mp1, pGlobal )) {
+                switch ( pGlobal->usType ) {
+                    case FONT_TYPE_CMB:
+                        SetupWindowCF( hwnd );
+                        SetupCnrCF( hwnd );
+                        PopulateValues_CMB( hwnd, pGlobal );
+                        break;
+                    case FONT_TYPE_ABR:
+                        SetupWindowUF( hwnd );  // same UI as Uni-fonts
+                        SetupCnrAB( hwnd );
+                        PopulateValues_ABR( hwnd, pGlobal );
+                        break;
+                    case FONT_TYPE_UNI:
+                        SetupWindowUF( hwnd );
+                        SetupCnrUF( hwnd );
+                        break;
+                }
+            }
+            return (MRESULT) 0;
+        // WM_READFILE end
 
 
         case WM_CLOSE:
             // TODO verify quit if changes are outstanding
             WinPostMsg( hwnd, WM_QUIT, 0, 0 );
             return (MRESULT) 0;
-        // WM_CLOSE
+        // WM_CLOSE end
 
 
         case WM_COMMAND:
             switch( SHORT1FROMMP( mp1 )) {
 
                 case ID_NEWCMB:                 // "New -> Combined font or alias file"
-                    // TODO see if unsaved changes are pending
-                    CloseFontFile( hwnd, pGlobal );
-                    if ( pGlobal->usType != FONT_TYPE_CMB )
-                    {
-                        WinSendDlgItemMsg( hwnd, IDD_COMPONENTS,
-                                           CM_REMOVEDETAILFIELDINFO, MPVOID,
-                                           MPFROM2SHORT( 0, CMA_INVALIDATE | CMA_FREE ));
-                        pGlobal->usType = FONT_TYPE_CMB;
-                        WinShowWindow( WinWindowFromID( hwnd, IDD_FACEGROUP ), TRUE );
-                        WinShowWindow( WinWindowFromID( hwnd, IDD_FACETEXT ),  TRUE );
-                        WinShowWindow( WinWindowFromID( hwnd, IDD_FACENAME ),  TRUE );
-                        WinShowWindow( WinWindowFromID( hwnd, ID_METRICS ),    TRUE );
-                        SetupCnrCF( hwnd );
-                    }
+                    NewFontFile( hwnd, pGlobal, FONT_TYPE_CMB );
                     return (MRESULT) 0;
 
                 case ID_NEWUNI:                 // "New -> Uni-font file"
-                    // TODO see if unsaved changes are pending
-                    CloseFontFile( hwnd, pGlobal );
-                    if ( pGlobal->usType != FONT_TYPE_UNI ) {
-                        WinSendDlgItemMsg( hwnd, IDD_COMPONENTS,
-                                           CM_REMOVEDETAILFIELDINFO, MPVOID,
-                                           MPFROM2SHORT( 0, CMA_INVALIDATE | CMA_FREE ));
-                        pGlobal->usType = FONT_TYPE_UNI;
-                        WinShowWindow( WinWindowFromID( hwnd, IDD_FACEGROUP ), FALSE );
-                        WinShowWindow( WinWindowFromID( hwnd, IDD_FACETEXT ),  FALSE );
-                        WinShowWindow( WinWindowFromID( hwnd, IDD_FACENAME ),  FALSE );
-                        WinShowWindow( WinWindowFromID( hwnd, ID_METRICS ),    FALSE );
-                        SetupCnrUF( hwnd );
-                    }
+                    NewFontFile( hwnd, pGlobal, FONT_TYPE_UNI );
                     return (MRESULT) 0;
 
                 case ID_OPEN:                  // "Open"
@@ -379,42 +371,15 @@ MRESULT EXPENTRY MainDialogProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
                     fd.pszTitle = NULL;
                     sprintf( fd.szFullFile, "*.CMB");
                     hwndFD = WinFileDlg( HWND_DESKTOP, hwnd, &fd );
-                    if ( hwndFD && fd.lReturn == DID_OK &&
-                         ReadFontFile( hwnd, fd.szFullFile, pGlobal ))
-                    {
-                        switch ( pGlobal->usType ) {
-                            case FONT_TYPE_CMB:
-                                WinShowWindow( WinWindowFromID( hwnd, IDD_FACEGROUP ), TRUE );
-                                WinShowWindow( WinWindowFromID( hwnd, IDD_FACETEXT ),  TRUE );
-                                WinShowWindow( WinWindowFromID( hwnd, IDD_FACENAME ),  TRUE );
-                                WinShowWindow( WinWindowFromID( hwnd, ID_METRICS ),    TRUE );
-                                SetupCnrCF( hwnd );
-                                PopulateValues_CMB( hwnd, pGlobal );
-                                break;
-                            case FONT_TYPE_ABR:
-                                WinShowWindow( WinWindowFromID( hwnd, IDD_FACEGROUP ), FALSE );
-                                WinShowWindow( WinWindowFromID( hwnd, IDD_FACETEXT ),  FALSE );
-                                WinShowWindow( WinWindowFromID( hwnd, IDD_FACENAME ),  FALSE );
-                                WinShowWindow( WinWindowFromID( hwnd, ID_METRICS ),    FALSE );
-                                SetupCnrAB( hwnd );
-                                PopulateValues_ABR( hwnd, pGlobal );
-                                break;
-                            case FONT_TYPE_UNI:
-                                WinShowWindow( WinWindowFromID( hwnd, IDD_FACEGROUP ), FALSE );
-                                WinShowWindow( WinWindowFromID( hwnd, IDD_FACETEXT ),  FALSE );
-                                WinShowWindow( WinWindowFromID( hwnd, IDD_FACENAME ),  FALSE );
-                                WinShowWindow( WinWindowFromID( hwnd, ID_METRICS ),    FALSE );
-                                SetupCnrUF( hwnd );
-                                break;
-                        }
-                    }
+                    if ( hwndFD && fd.lReturn == DID_OK )
+                        WinSendMsg( hwnd, WM_READFILE, MPFROMP( fd.szFullFile ), MPVOID );
                     return (MRESULT) 0;
 
                 case ID_EXIT:                   // "Exit"
                     WinPostMsg( hwnd, WM_CLOSE, 0, 0 );
                     return (MRESULT) 0;
 
-                case ID_ADD:                 // "Add"
+                case ID_ADD:                    // "Add"
                     switch ( pGlobal->usType ) {
                         case FONT_TYPE_UNI:
                             AddUniFont( hwnd, pGlobal );
@@ -435,9 +400,9 @@ MRESULT EXPENTRY MainDialogProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
                                                           MPFROMP( (PRECORDCORE)CMA_FIRST ),
                                                           MPFROMSHORT( CRA_SELECTED ));
                     if ( pRec && ( pGlobal->usType == FONT_TYPE_CMB )
-                              && pGlobal->font.combined.pComponents
-                              && pGlobal->font.combined.pComponents->ulCmpFonts ) {
-#if 1
+                              && pGlobal->font.combined.pFontList
+                              && pGlobal->font.combined.ulCmpFonts ) {
+#if 0
                         cfprops.cb = sizeof( CFPROPS );
                         cfprops.hab = pGlobal->hab;
                         cfprops.hmq = pGlobal->hmq;
@@ -447,7 +412,7 @@ MRESULT EXPENTRY MainDialogProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
                         WinDlgBox( HWND_DESKTOP, hwnd, (PFNWP) CompFontDlgProc,
                                    NULLHANDLE, IDD_COMPFONT, &cfprops );
 #else
-                        AddComponentFont( hwnd, pGlobal, pRec->ulIndex );
+                        EditComponentFont( hwnd, pGlobal, pRec->ulIndex );
 #endif
                     }
                     return (MRESULT) 0;
@@ -463,7 +428,7 @@ MRESULT EXPENTRY MainDialogProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
                 default: break;
             }
             return (MRESULT) 0;
-        // WM_COMMAND
+        // WM_COMMAND end
 
 
         case WM_CONTROL:
@@ -523,7 +488,7 @@ MRESULT EXPENTRY MainDialogProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
                 default: break;
             }
             return (MRESULT) 0;
-        // WM_CONTROL
+        // WM_CONTROL end
 
 
         case WM_MINMAXFRAME:
@@ -537,12 +502,14 @@ MRESULT EXPENTRY MainDialogProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
                 WinShowWindow( WinWindowFromID( hwnd, ID_ADD ),         TRUE );
             }
             return (MRESULT) FALSE;
+        // WM_MINMAXFRAME end
 
 
         case WM_PRESPARAMCHANGED:
             if ( (ULONG) mp1 == PP_FONTNAMESIZE )
                 EmboldenWindowText( WinWindowFromID( hwnd, IDD_STATUS ), hwnd );
             break;
+        // WM_PRESPARAMCHANGED end
 
 
         case WM_DESTROY:
@@ -552,7 +519,7 @@ MRESULT EXPENTRY MainDialogProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
             WinSendDlgItemMsg( hwnd, IDD_COMPONENTS, CM_REMOVEDETAILFIELDINFO, NULL,
                                MPFROM2SHORT( 0, CMA_INVALIDATE | CMA_FREE ));
             break;
-        // WM_DESTROY
+        // WM_DESTROY end
 
 
         default: break;
@@ -561,6 +528,49 @@ MRESULT EXPENTRY MainDialogProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
     return WinDefDlgProc( hwnd, msg, mp1, mp2 );
 }
 
+
+/* ------------------------------------------------------------------------- *
+ * NewFontFile                                                               *
+ *                                                                           *
+ * Create a new, empty font file of the specified type.                      *
+ *                                                                           *
+ * ARGUMENTS:                                                                *
+ *   HWND hwnd         : handle of the main program dialog.                  *
+ *   PCFEGLOBAL pGlobal: pointer to global program data.                     *
+ *   USHORT usType     : one of the FONT_TYPE_xxx constants.                 *
+ *                                                                           *
+ * RETURNS: N/A                                                              *
+ * ------------------------------------------------------------------------- */
+void NewFontFile( HWND hwnd, PCFEGLOBAL pGlobal, USHORT usType )
+{
+    BOOL bCreated;
+    // TODO see if unsaved changes are pending
+
+    // Close the current file
+    if ( pGlobal->hFile )
+        CloseFontFile( hwnd, pGlobal );
+    pGlobal->bModified = FALSE;
+
+    switch( usType ) {
+        default:
+        case FONT_TYPE_CMB:
+            bCreated = NewFont_CMB( hwnd, pGlobal );
+            break;
+        case FONT_TYPE_UNI:
+            bCreated = NewFont_UNI( hwnd, pGlobal );
+            break;
+        // We don't support creating other types yet
+    }
+
+    if ( bCreated )
+        ShowFileName( pGlobal );
+/*
+    else
+    // TODO if an error occured here, we should prompt for retry or else exit
+    // the program, because there's probably not much else we can safely do.
+*/
+
+}
 
 
 /* ------------------------------------------------------------------------- *
@@ -670,8 +680,8 @@ void CloseFontFile( HWND hwnd, PCFEGLOBAL pGlobal )
         case FONT_TYPE_CMB:
             wrap_free( (PPVOID) &(pGlobal->font.combined.pSignature) );
             wrap_free( (PPVOID) &(pGlobal->font.combined.pMetrics) );
-            wrap_free( (PPVOID) &(pGlobal->font.combined.pComponents) );
             wrap_free( (PPVOID) &(pGlobal->font.combined.pEnd) );
+            ComponentListFree( &(pGlobal->font.combined) );
             break;
 
         case FONT_TYPE_UNI:
@@ -694,6 +704,7 @@ void CloseFontFile( HWND hwnd, PCFEGLOBAL pGlobal )
         DosClose( pGlobal->hFile );
     pGlobal->szCurrentFile[0] = '\0';
     pGlobal->cbFile = 0;
+    pGlobal->usType = 0;
 }
 
 
@@ -1354,15 +1365,14 @@ USHORT ReadFontFile( HWND hwnd, PSZ pszFile, PCFEGLOBAL pGlobal )
                    flOpFn,      // function flags for DosOpen
                    flOpMd,      // mode flags for DosOpen
                    cbBuffer,    // size of file (and thus of our read buffer)
-                   cbRead,      // number of bytes read by DosRead
-                   ulArray;     // size of COMPFONTS array minus the first entry
-    USHORT         usType = 0;  // return value
+                   cbRead;      // number of bytes read by DosRead
     PBYTE          pBuffer;     // raw buffer containing file contents
     APIRET         rc;          // return code from Dos**
 
 
     // Close any currently-open file and free its contents
-    CloseFontFile( hwnd, pGlobal );
+    if ( pGlobal->hFile )
+        CloseFontFile( hwnd, pGlobal );
 
     // Open the file
     flOpFn = OPEN_ACTION_OPEN_IF_EXISTS | OPEN_ACTION_FAIL_IF_NEW;
@@ -1423,113 +1433,43 @@ USHORT ReadFontFile( HWND hwnd, PSZ pszFile, PCFEGLOBAL pGlobal )
         ( pSig->ulSize == sizeof( COMBFONTSIGNATURE )))
     {
         // Combined font
-#if 1
-        if ( ! ParseFont_CMB( (PCOMBFONTSIGNATURE) pSig, pGlobal )) {
+        if ( ! ParseFont_CMB( pSig, pGlobal )) {
             sprintf( szError, "Failed to allocate memory for reading file (\"%s\").",
                      ((PCOMBFONTSIGNATURE)pSig)->szSignature );
             WinMessageBox( HWND_DESKTOP, hwnd, szError, "File Read Error",
                            0, MB_MOVEABLE | MB_OK | MB_ERROR );
             goto finish;
         }
-#else
-        PCOMBFONTSIGNATURE pSignature;
-        PCOMBFONTMETRICS   pMetrics;
-        PCOMPFONTHEADER    pComponents;
-        PCOMBFONTEND       pEnd;
-
-        // Allocate separate new buffers for each portion of the file
-        // so we can more easily add or remove parts later
-        pSignature  = (PCOMBFONTSIGNATURE) pSig;
-        pMetrics    = (PCOMBFONTMETRICS)( pBuffer + pSig->ulSize );
-        pComponents = (PCOMPFONTHEADER)( (PBYTE) pMetrics + pMetrics->ulSize );
-        ulArray = pComponents->ulCmpFonts ?
-                  (( pComponents->ulCmpFonts - 1 ) * sizeof( COMPFONT )): 0;
-        pEnd = (PCOMBFONTEND)( (PBYTE) pComponents + pComponents->ulSize + ulArray );
-
-        pGlobal->font.combined.pSignature = (PCOMBFONTSIGNATURE) malloc( pSignature->ulSize );
-        if ( !pGlobal->font.combined.pSignature ) goto finish;
-        pGlobal->font.combined.pMetrics = (PCOMBFONTMETRICS) malloc( pMetrics->ulSize );
-        if ( !pGlobal->font.combined.pMetrics ) {
-            wrap_free( (PPVOID) &(pGlobal->font.combined.pSignature) );
-            goto finish;
-        }
-        pGlobal->font.combined.pComponents = (PCOMPFONTHEADER) malloc( pComponents->ulSize + ulArray );
-        if ( !pGlobal->font.combined.pComponents ) {
-            wrap_free( (PPVOID) &(pGlobal->font.combined.pSignature) );
-            wrap_free( (PPVOID) &(pGlobal->font.combined.pMetrics) );
-            goto finish;
-        }
-        pGlobal->font.combined.pEnd = (PCOMBFONTEND) malloc( pEnd->ulSize );
-        if ( !pGlobal->font.combined.pEnd ) {
-            wrap_free( (PPVOID) &(pGlobal->font.combined.pSignature) );
-            wrap_free( (PPVOID) &(pGlobal->font.combined.pMetrics) );
-            wrap_free( (PPVOID) &(pGlobal->font.combined.pComponents) );
-            goto finish;
-        }
-        memcpy( pGlobal->font.combined.pSignature, pSignature, pSignature->ulSize );
-        memcpy( pGlobal->font.combined.pMetrics, pMetrics, pMetrics->ulSize );
-        memcpy( pGlobal->font.combined.pComponents, pComponents,
-                pComponents->ulSize + ulArray );
-        memcpy( pGlobal->font.combined.pEnd, pEnd, pEnd->ulSize );
-#endif
         pGlobal->cbFile = fs3.cbFile;
         strncpy( pGlobal->szCurrentFile, pszFile, CCHMAXPATH );
-        pGlobal->usType = FONT_TYPE_CMB;
-        usType = pGlobal->usType;
     }
     else if (( pSig->Identity == SIG_ABRS ) &&
         ( pSig->ulSize == sizeof( ABRFILESIGNATURE )))
     {
         // Associated bitmap rules file
-#if 1
-        if ( ! ParseFont_ABR( (PCOMBFONTSIGNATURE) pSig, pGlobal )) {
+        if ( ! ParseFont_ABR( pSig, pGlobal )) {
             sprintf( szError, "Failed to allocate memory for reading file (\"%s\").",
                      ((PABRFILESIGNATURE)pSig)->szSignature );
             WinMessageBox( HWND_DESKTOP, hwnd, szError, "File Read Error",
                            0, MB_MOVEABLE | MB_OK | MB_ERROR );
             goto finish;
         }
-#else
-        PABRFILESIGNATURE pSignature;
-        PFONTASSOCIATION  pAssociations;
-        PABRFILEEND       pEnd;
-
-        pSignature = (PABRFILESIGNATURE) pSig;
-        pAssociations = (PFONTASSOCIATION)( pBuffer + pSignature->ulSize );
-        ulArray = ( pSignature->ulCount + 1 ) * pAssociations->ulSize;
-        pEnd = (PABRFILEEND)( (PBYTE)pAssociations + ulArray );
-
-        pGlobal->font.abr.pSignature = (PABRFILESIGNATURE) malloc( pSignature->ulSize );
-        if ( !pGlobal->font.abr.pSignature ) goto finish;
-        pGlobal->font.abr.pAssociations = (PFONTASSOCIATION) malloc( ulArray );
-        if ( !pGlobal->font.abr.pAssociations ) {
-            wrap_free( (PPVOID) &(pGlobal->font.abr.pSignature) );
-            goto finish;
-        }
-        pGlobal->font.abr.pEnd = (PABRFILEEND) malloc( pEnd->ulSize );
-        if ( !pGlobal->font.abr.pEnd) {
-            wrap_free( (PPVOID) &(pGlobal->font.abr.pSignature) );
-            wrap_free( (PPVOID) &(pGlobal->font.abr.pEnd) );
-            goto finish;
-        }
-        memcpy( pGlobal->font.abr.pSignature, pSignature, pSignature->ulSize );
-        memcpy( pGlobal->font.abr.pAssociations, pAssociations, ulArray );
-        memcpy( pGlobal->font.abr.pEnd, pEnd, pEnd->ulSize );
-#endif
         pGlobal->cbFile = fs3.cbFile;
         strncpy( pGlobal->szCurrentFile, pszFile, CCHMAXPATH );
-        pGlobal->usType = FONT_TYPE_ABR;
-        usType = pGlobal->usType;
     }
     else if (( pSig->Identity == SIG_UNFD ) &&
         ( pSig->ulSize == sizeof( UNIFONTDIRECTORY )))
     {
         // Uni-font
-        pGlobal->font.pUFontDir = (PUNIFONTDIRECTORY) pSig;
+        if ( ! ParseFont_UNI( pSig, pGlobal )) {
+            sprintf( szError, "Failed to allocate memory for reading file (\"%s\").",
+                     ((PUNIFONTSIGNATURE)pSig)->szSignature );
+            WinMessageBox( HWND_DESKTOP, hwnd, szError, "File Read Error",
+                           0, MB_MOVEABLE | MB_OK | MB_ERROR );
+            goto finish;
+        }
         pGlobal->cbFile = fs3.cbFile;
         strncpy( pGlobal->szCurrentFile, pszFile, CCHMAXPATH );
-        pGlobal->usType = FONT_TYPE_UNI;
-        usType = pGlobal->usType;
     }
     else {
         if ( pSig->ulSize == sizeof( COMBFONTSIGNATURE ))
@@ -1542,8 +1482,38 @@ USHORT ReadFontFile( HWND hwnd, PSZ pszFile, PCFEGLOBAL pGlobal )
     }
 
 finish:
+    ShowFileName( pGlobal );
     if ( pBuffer ) DosFreeMem( pBuffer );
-    return usType;
+    return pGlobal->usType;
+}
+
+
+/* ------------------------------------------------------------------------- *
+ * ShowFileName                                                              *
+ *                                                                           *
+ * Adds the current working filename to the window title.                    *
+ *                                                                           *
+ * ARGUMENTS:                                                                *
+ *   PCFEGLOBAL pGlobal: pointer to global program data.                     *
+ *                                                                           *
+ * RETURNS: N/AL                                                             *
+ * ------------------------------------------------------------------------- */
+void ShowFileName( PCFEGLOBAL pGlobal )
+{
+    CHAR achTitle[ _MAX_PATH + 40 ];
+    CHAR achName[ _MAX_FNAME ];
+    CHAR achExt[ _MAX_EXT ];
+
+    if ( pGlobal->usType && pGlobal->szCurrentFile[0] ) {
+        _splitpath( pGlobal->szCurrentFile, NULL, NULL, achName, achExt );
+        sprintf( achTitle, "%.36s - %s%s", SZ_PROGRAM_TITLE, achName, achExt );
+    }
+    else {
+        sprintf( achTitle, "%.248s - New", SZ_PROGRAM_TITLE );
+    }
+
+    WinSetWindowText( pGlobal->hwndMain, achTitle );
+
 }
 
 

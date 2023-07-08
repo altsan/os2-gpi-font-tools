@@ -89,6 +89,8 @@ BOOL ParseFont_ABR( PGENERICRECORD pStart, PCFEGLOBAL pGlobal )
     memcpy( pWorkingFont->pAssociations, pFileAssocs, cbAssocArray );
     memcpy( pWorkingFont->pEnd, pFileEnd, pFileEnd->ulSize );
 
+    pGlobal->usType = FONT_TYPE_ABR;
+
     return TRUE;
 }
 

@@ -1,5 +1,5 @@
 /*****************************************************************************
- * combined.c                                                                *
+ * unifont.c                                                                 *
  *                                                                           *
  * Functions specific to the Uni-font format.                                *
  *                                                                           *
@@ -34,6 +34,36 @@
 #include "cmbfont.h"                        // includes unifont.h
 #include "gpifont.h"
 #include "compfont.h"
+
+
+
+/* ------------------------------------------------------------------------- *
+ * ParseFont_UNI                                                             *
+ *                                                                           *
+ * Opens and parses a Uni-font file.                                         *
+ *                                                                           *
+ * ARGUMENTS:                                                                *
+ *   PGENERICRECORD pStart: pointer to the start of the font                 *
+ *   PCFEGLOBAL pGlobal: pointer to global program data                      *
+ *                                                                           *
+ * RETURNS: BOOL                                                             *
+ *   TRUE on success, FALSE if an error occurred.                            *
+ * ------------------------------------------------------------------------- */
+BOOL ParseFont_UNI( PGENERICRECORD pStart, PCFEGLOBAL pGlobal )
+{
+    PUNIFONTDIRECTORY pFileUniFD;
+
+    pFileUniFD = (PUNIFONTDIRECTORY) pStart;
+
+    // For now we just copy the font file contents directly.
+    // If and when we support modifying it, we may change this.
+    pGlobal->font.pUFontDir = (PUNIFONTDIRECTORY) malloc( pFileUniFD->ulSize );
+    if ( !(pGlobal->font.pUFontDir) )
+        return FALSE;
+
+    pGlobal->usType = FONT_TYPE_UNI;
+    return TRUE;
+}
 
 
 /* ------------------------------------------------------------------------- *
@@ -88,6 +118,40 @@ void PopulateValues_UNI( HWND hwnd, PCFEGLOBAL pGlobal )
         // Add this face to the container
     }
 
+}
+
+
+/* ------------------------------------------------------------------------- *
+ * NewFont_UNI                                                               *
+ *                                                                           *
+ * Create a new, empty Uni-font file.                                        *
+ * ------------------------------------------------------------------------- */
+BOOL NewFont_UNI( HWND hwnd, PCFEGLOBAL pGlobal )
+{
+    // Set up the UI for Uni-font if it isn't already
+    if ( pGlobal->usType != FONT_TYPE_UNI ) {
+        WinSendDlgItemMsg( hwnd, IDD_COMPONENTS,
+                           CM_REMOVEDETAILFIELDINFO, MPVOID,
+                           MPFROM2SHORT( 0, CMA_INVALIDATE | CMA_FREE ));
+        pGlobal->usType = FONT_TYPE_UNI;
+        SetupWindowUF( hwnd );
+        SetupCnrUF( hwnd );
+    }
+    return TRUE;
+}
+
+
+/* ------------------------------------------------------------------------- *
+ * SetupWindowUF                                                             *
+ *                                                                           *
+ * Set up the window UI controls for Uni-font format.                        *
+ * ------------------------------------------------------------------------- */
+void SetupWindowUF( HWND hwnd )
+{
+    WinShowWindow( WinWindowFromID( hwnd, IDD_FACEGROUP ), FALSE );
+    WinShowWindow( WinWindowFromID( hwnd, IDD_FACETEXT ),  FALSE );
+    WinShowWindow( WinWindowFromID( hwnd, IDD_FACENAME ),  FALSE );
+    WinShowWindow( WinWindowFromID( hwnd, ID_METRICS ),    FALSE );
 }
 
 

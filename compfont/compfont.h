@@ -31,6 +31,9 @@
 // ----------------------------------------------------------------------------
 // CONSTANTS
 
+#define SZ_PROGRAM_TITLE    "Composite Font Editor"
+
+
 /* Font family class and subclass definitions.
  */
 #define FF_CLASS_0          "0 - No Classification"
@@ -152,9 +155,13 @@
  */
 #define FONT_TYPE_CMB               1       // Combined font
 #define FONT_TYPE_PCR               2       // (TBI) Pre-combined rule file
-#define FONT_TYPE_ABR               3       // (TBI) Associated bitmaps rule file
+#define FONT_TYPE_ABR               3       // Associated bitmaps rule file
 #define FONT_TYPE_UNI               4       // Uni-font (including font directory)
 #define FONT_TYPE_UFF               5       // (TBI) Uni-font face (standalone resource)
+
+/* Private window messages
+ */
+#define WM_READFILE                 (WM_USER+1)
 
 
 // ----------------------------------------------------------------------------
@@ -170,19 +177,15 @@ typedef struct _font_assoc_node {
 
 
 // Contains pointers to all the components of a combined font
+// (This does not quite reflect the actual file structure on disk,
+// as we use a linked list of font associations instead of a
+// contiguous array like the file does.)
 typedef struct _cmb_font_data {
-    /* The first four pointers are offsets into a single buffer containing the
-     * entirety of a loaded font.  They will be NULL for a newly-created font,
-     * until it is saved to file for the first time.
-     */
-    PCOMBFONTSIGNATURE pSignature;      // pointer to the start of the font
+    PCOMBFONTSIGNATURE pSignature;      // pointer to the font signature block
     PCOMBFONTMETRICS   pMetrics;        // pointer to the font metrics block
-    PCOMPFONTHEADER    pComponents;     // pointer to original font component definitions
+    ULONG              ulCmpFonts;      // number of component fonts
+    PFONTASSOCLIST     pFontList;       // linked list of font component definitions
     PCOMBFONTEND       pEnd;            // pointer to the font end signature
-
-    /* Additional data which may change while editing a font.
-     */
-    PFONTASSOCLIST     pFontList;       // list of current font component definitions
 } COMBFONTFILE, *PCOMBFONTFILE;
 
 
@@ -287,6 +290,7 @@ typedef struct _Global_Data {
     HMQ     hmq;                            // msg-queue handle
     HWND    hwndMain;                       // handle of main dialog window
     CHAR    szCurrentFile[ CCHMAXPATH+1 ];  // the file currently open
+    BOOL    bModified;                      // has the current file been modified?
     HFILE   hFile;                          // handle of the current file
     ULONG   cbFile;                         // total size of the file in bytes
     USHORT  usType;                         // current font type
@@ -304,6 +308,7 @@ typedef struct _Global_Data {
 // ----------------------------------------------------------------------------
 // FUNCTION PROTOTYPES
 
+// compfont.c
 void             CentreWindow( HWND hwnd, HWND hwndRel );
 void             CloseFontFile( HWND hwnd, PCFEGLOBAL pGlobal );
 void             DeriveUniFontMetrics( PUNIFONTMETRICS pUFM, PFONTMETRICS pFM );
@@ -312,36 +317,44 @@ LONG             GetCurrentDPI( HWND hwnd );
 void             GlyphRangeDialog( HWND hwnd, PCFPROPS pCompFont, BOOL fEdit );
 MRESULT EXPENTRY ImportDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
 MRESULT EXPENTRY MainDialogProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
+void             NewFontFile( HWND hwnd, PCFEGLOBAL pGlobal, USHORT usType );
 MRESULT EXPENTRY ProductInfoDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
 void             PopulateMetricFlags( HWND hwndCnr, PFONTASSOCIATION pFA );
 MRESULT EXPENTRY RangeDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
 USHORT           ReadFontFile( HWND hwnd, PSZ pszfile, PCFEGLOBAL pGlobal  );
 BOOL             SelectInstalledFont( HWND hwnd, PSZ pszFacename );
+void             ShowFileName( PCFEGLOBAL pGlobal );
 void             wrap_free( void **address );
 
 
-// From combined.c
+// combined.c
 void             AddComponentFont( HWND hwnd, PCFEGLOBAL pGlobal );
 MRESULT EXPENTRY CompFontDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
+void             ComponentListDelete( PCOMBFONTFILE pCombFont, ULONG ulIndex );
+void             ComponentListFree( PCOMBFONTFILE pCombFont );
+BOOL             ComponentListInit( PCOMBFONTFILE pCombFont, PCOMPFONTHEADER pComponents );
+BOOL             ComponentListInsert( PCOMBFONTFILE pCombFont, PFONTASSOCIATION pCompFont, ULONG ulIndex );
 void             EditComponentFont( HWND hwnd, PCFEGLOBAL pGlobal, ULONG ulAssoc );
+BOOL             InitFontStructure_CMB( PCFEGLOBAL pGlobal, ULONG cbSig, ULONG cbMetrics, ULONG cbEnd );
+BOOL             NewFont_CMB( HWND hwnd, PCFEGLOBAL pGlobal );
 BOOL             ParseFont_CMB( PGENERICRECORD pStart, PCFEGLOBAL pGlobal );
 void             PopulateValues_CMB( HWND hwnd, PCFEGLOBAL pGlobal );
 void             SetupCnrCF( HWND hwnd );
-void             ComponentListDelete( PCFEGLOBAL pGlobal, ULONG ulIndex );
-void             ComponentListFree( PCFEGLOBAL pGlobal );
-void             ComponentListInit( PCFEGLOBAL pGlobal, PCOMPFONTHEADER pComponents );
-BOOL             ComponentListInsert( PCFEGLOBAL pGlobal, PFONTASSOCIATION pCompFont, ULONG ulIndex );
+void             SetupWindowCF( HWND hwnd );
 
 
-// From abr.c
+// abr.c
 BOOL             ParseFont_ABR( PGENERICRECORD pStart, PCFEGLOBAL pGlobal );
 void             PopulateValues_ABR( HWND hwnd, PCFEGLOBAL pGlobal );
 void             SetupCnrAB( HWND hwnd );
 
 
-// From unifont.c
+// unifont.c
 void             AddUniFont( HWND hwnd, PCFEGLOBAL pGlobal );
 void             PopulateValues_UNI( HWND hwnd, PCFEGLOBAL pGlobal );
+BOOL             NewFont_UNI( HWND hwnd, PCFEGLOBAL pGlobal );
+BOOL             ParseFont_UNI( PGENERICRECORD pStart, PCFEGLOBAL pGlobal );
 void             SetupCnrUF( HWND hwnd );
+void             SetupWindowUF( HWND hwnd );
 MRESULT EXPENTRY UniFontDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
 

@@ -9,17 +9,17 @@ BEGIN
             FCF_TASKLIST | FCF_SYSMENU | FCF_TITLEBAR | FCF_MINBUTTON
     BEGIN
         CTEXT           "", IDD_STATUS, 3, 180, 285, 10, DT_VCENTER
-        GROUPBOX        "Font family", -1, 3, 127, 285, 51
-        LTEXT           "Name:", -1, 8, 159, 81, 8, DT_VCENTER
+        GROUPBOX        "Font family", IDD_FONTGROUP, 3, 127, 285, 51
+        LTEXT           "Name:", IDD_NAMETEXT, 8, 159, 81, 8, DT_VCENTER
         ENTRYFIELD      "", IDD_FAMILYNAME, 92, 160, 190, 8, ES_MARGIN
-        LTEXT           "Classification:", -1, 8, 146, 68, 8, DT_VCENTER
+        LTEXT           "Classification:", IDD_CLASSTEXT, 8, 146, 68, 8, DT_VCENTER
         CONTROL         "", IDD_FONTCLASS, 91, 95, 95, 60, WC_COMBOBOX,
                         LS_HORZSCROLL | CBS_DROPDOWNLIST | WS_GROUP | WS_TABSTOP |
                         WS_VISIBLE
         CONTROL         "", IDD_FONTSUBCLASS, 188, 95, 95, 60, WC_COMBOBOX,
                         LS_HORZSCROLL | CBS_DROPDOWNLIST | WS_GROUP | WS_TABSTOP |
                         WS_VISIBLE
-        LTEXT           "Registry ID:", -1, 8, 132, 68, 8, DT_VCENTER
+        LTEXT           "Registry ID:", IDD_REGTEXT, 8, 132, 68, 8, DT_VCENTER
         SPINBUTTON      IDD_REGISTRY, 91, 132, 40, 12, SPBS_NUMERICONLY |
                         WS_GROUP
         AUTOCHECKBOX    "Licensed font", IDD_LICENCED, 188, 132, 95, 8
