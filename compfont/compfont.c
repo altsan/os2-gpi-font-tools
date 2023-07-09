@@ -574,34 +574,6 @@ void NewFontFile( HWND hwnd, PCFEGLOBAL pGlobal, USHORT usType )
 
 
 /* ------------------------------------------------------------------------- *
- * AddUniFont                                                                *
- *                                                                           *
- * Brings up the dialog to add a new component font to a combined-font file. *
- *                                                                           *
- * ARGUMENTS:                                                                *
- *   HWND hwnd         : handle of the main program dialog.                  *
- *   PCFEGLOBAL pGlobal: pointer to global program data.                     *
- *                                                                           *
- * RETURNS: N/A                                                              *
- * ------------------------------------------------------------------------- */
-void AddUniFont( HWND hwnd, PCFEGLOBAL pGlobal )
-{
-    UFPROPS       ufprops;
-    UNIFONTHEADER font = {0};
-
-    ufprops.cb = sizeof( UFPROPS );
-    ufprops.hab = pGlobal->hab;
-    ufprops.hmq = pGlobal->hmq;
-    ufprops.hwndMain = hwnd;
-    ufprops.fEditExisting = FALSE;
-    ufprops.pFontHeader = &font;
-    ufprops.pFontData = NULL;
-    WinDlgBox( HWND_DESKTOP, hwnd, (PFNWP) UniFontDlgProc,
-               NULLHANDLE, IDD_UNIFONT, &ufprops );
-}
-
-
-/* ------------------------------------------------------------------------- *
  * CentreWindow                                                              *
  *                                                                           *
  * Centres the given window on the screen, or relative to another window.    *

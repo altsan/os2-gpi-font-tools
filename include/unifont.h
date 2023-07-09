@@ -12,8 +12,9 @@
  *  Uni-font files seem to be very rare - so rare, in fact, that I've never  *
  *  actually encountered one.  IBM did go out of their way to write an IFI   *
  *  driver for the format and include it in recent versions of OS/2, so      *
- *  presumably there were some made at some point (probably in-house for     *
- *  some corporate customers).                                               *
+ *  possibly some were made at some point, perhaps in-house for a corporate  *
+ *  customer.  (On the other hand, the same IFI driver also seems to         *
+ *  implement CMB font support, so maybe it's only there for that.)          *
  *                                                                           *
  *  (C) 2012 Alexander Taylor                                                *
  *                                                                           *
@@ -279,7 +280,6 @@ typedef struct _UNIFONTMETRICS {
     UCHAR        panose[ 12 ];          /* The 12-byte PANOSE structure.    */
     UCHAR        szFullFamilyname[256]; /* The untruncated font family name */
     UCHAR        szFullFacename[40];    /* The untruncated font face name   */
-
 } UNIFONTMETRICS;
 typedef UNIFONTMETRICS *PUNIFONTMETRICS;
 
@@ -555,6 +555,7 @@ typedef struct _UNIKERNPAIRTABLE {
 typedef UNIKERNPAIRTABLE *PUNIKERNPAIRTABLE;
 
 
+
 /* The font character definitions follow the kern pairs table if it exists, or
  * the character group definitions otherwise.  Each character definition
  * consists of some or all of these fields (depending on the flags indicated
@@ -602,6 +603,27 @@ typedef UNIKERNPAIRTABLE *PUNIKERNPAIRTABLE;
  * The actual character image data which follows is equivalent in format to an
  * OS/2 Bitmap image of one bit per pixel (1bpp).
  */
+
+/* Character definition record for Type 1 and 2 fonts.
+ */
+typedef struct _UNICHARDEF1 {
+    LONG  offsetImageData;
+    SHORT xCellWidth;
+} UNICHARDEF1;
+typedef UNICHARDEF1 *PUNICHARDEF1;
+
+
+/* Character definition record for Type 3 fonts.
+ */
+typedef struct _UNICHARDEF3 {
+    LONG  offsetImageData;
+    SHORT xCellA;
+    SHORT xCellB;
+    SHORT xCellC;
+} UNICHARDEF3;
+typedef UNICHARDEF3 *PUNICHARDEF3;
+
+
 
 #pragma pack()
 #endif      // #ifndef __UNIFONT_H__

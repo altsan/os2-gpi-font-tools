@@ -169,7 +169,7 @@
 
 #pragma pack(1)
 
-// A simple linked list of font associations
+// A simple linked list of font associations (used for CMB and PCR files)
 typedef struct _font_assoc_node {
     FONTASSOCIATION         font;       // the current component font association
     struct _font_assoc_node *pNext;     // pointer to next component
@@ -177,9 +177,8 @@ typedef struct _font_assoc_node {
 
 
 // Contains pointers to all the components of a combined font
-// (This does not quite reflect the actual file structure on disk,
-// as we use a linked list of font associations instead of a
-// contiguous array like the file does.)
+// (Note: this does not quite reflect the actual file structure on disk, as we
+// use a linked list of font associations instead of a single contiguous array)
 typedef struct _cmb_font_data {
     PCOMBFONTSIGNATURE pSignature;      // pointer to the font signature block
     PCOMBFONTMETRICS   pMetrics;        // pointer to the font metrics block
@@ -187,6 +186,17 @@ typedef struct _cmb_font_data {
     PFONTASSOCLIST     pFontList;       // linked list of font component definitions
     PCOMBFONTEND       pEnd;            // pointer to the font end signature
 } COMBFONTFILE, *PCOMBFONTFILE;
+
+
+// Contains pointers to all the components of a pre-combine rule
+// (same note as for the combined font structure, above)
+typedef struct _pcr_file_data {
+    PPRECOMBRULESIGNATURE  pSignature;    // pointer to the start of the font
+    PFONTASSOCIATION       pSourceAssoc;  // pointer to the source font association structure
+    PTARGETFONTASSOCHEADER pTargetHeader; // pointer to the target font association header
+    PPRECOMBRULEEND        pEnd;          // pointer to the font end signature
+    PFONTASSOCLIST         pFontList;     // linked list of target font definitions
+} PCRFILE, *PPCRFILE;
 
 
 // Contains pointers to all the components of an ABR file
@@ -197,32 +207,73 @@ typedef struct _abr_file_data {
 } ABRFILE, *PABRFILE;
 
 
-// Contains pointers to all the components of a PCR file
-typedef struct _pcr_file_data {
-    PPRECOMBRULESIGNATURE  pSignature;    // pointer to the start of the font
-    PFONTASSOCIATION       pSourceAssoc;  // pointer to the source font association structure
-    PTARGETFONTASSOCHEADER pTargetHeader; // pointer to the target font association header
-    PFONTASSOCIATION       pAssociations; // pointer to the array of target font associations
-    PPRECOMBRULEEND        pEnd;          // pointer to the font end signature
-} PCRFILE, *PPCRFILE;
+// Combined structure for Uni-font character definition and bitmap data
+typedef struct _unifont_char_data {
+    union {
+        UNICHARDEF1 type1;                  // type 1/2 character definition
+        UNICHARDEF3 type3;                  // type 3 character definition
+    } definition;
+    ULONG cbBitmap;                         // size of the character bitmap
+    PBYTE pBitmap;                          // pointer to bitmap data
+} UNIFONTCHARACTER, *PUNIFONTCHARACTER;
 
 
-// Wrapper for the various fixed Unifont data blocks preceding the variable data
+// A linked list of Uni-font character data
+typedef struct _unifont_chardef_node {
+    UNIFONTCHARACTER              character; // character data
+    struct _unifont_chardef_node *pNext;     // pointer to next character
+} UNIFONTCHARLIST, *PUNIFONTCHARLIST;
+
+
+// A linked list of Uni-font character groups
+typedef struct _unifont_chargroup_node {
+    UNICHARGROUPENTRY               group;  // the current character group
+    PUNIFONTCHARLIST                pChars; // linked list of character data
+    struct _unifont_chargroup_node *pNext;  // pointer to next group
+} UNIFONTGROUPLIST, *PUNIFONTGROUPLIST;
+
+
+// A linked list of Uni-font kerning pairs
+typedef struct _unifont_kern_pair_node {
+    UNIKERNINGPAIR                  pair;   // the current kerning pair
+    struct _unifont_kern_pair_node *pNext;  // pointer to next kerning pair
+} UNIFONTKERNPAIRLIST, *PUNIFONTKERNPAIRLIST;
+
+
+// Data about a Uni-font resource
+typedef struct _uni_font_data {
+    PUNIFONTRESOURCE         pHeader;       // pointer to amalgamated header
+    PUNIENDFONTRESOURCE      pEnd;          // pointer to font end signature
+    ULONG                    ulKernPairs;   // number of pairs in the kerning table
+    ULONG                    ulGroups;      // number of character groups in the font
+    PUNIFONTKERNPAIRLIST     pKerning;      // linked list of kerning pairs
+    PUNIFONTGROUPLIST        pGroups;       // linked list of character group definitions
+} UNIFONTFACE, *PUNIFONTFACE;
+
+
+// A linked list of Uni-font resources
+typedef struct _unifont_face_node {
+    UNIFONTFACE                font;        // the current uni-font resource
+    struct _unifont_face_node *pNext;       // pointer to next resource
+} UNIFONTFACELIST, *PUNIFONTFACELIST;
+
+
+// Contains pointers to the contents of a Uni-font file, plus the internal
+// data maintained when creating or modifying it.
+typedef struct _uni_font_file_data {
+    PUNIFONTDIRECTORY   pFontDir;       // pointer to the original font file
+    PUNIFONTFACELIST    pFontList;      // linked list of font face resources
+} UNIFONTFILE, *PUNIFONTFILE;
+
+
+/* Just use PUNIFONTRESOURCE from unifont.h instead (ALT)
+// Wrapper for the various fixed Uni-font data blocks preceding the variable data
 typedef struct _uni_font_wrapper {
     UNIFONTSIGNATURE        signature;  // font signature block
     UNIFONTMETRICS          metrics;    // font metrics block
     UNIFONTDEFINITIONHEADER definition; // font definition header
 } UNIFONTHEADER, *PUNIFONTHEADER;
-
-
-// Contains pointers to all the components of a Uni-font resource
-typedef struct _uni_font_data {
-    PUNIFONTHEADER           pHeader;   // pointer to amalgamated header (above)
-    PUNICHARGROUPDEFINITION  pGroups;   // pointer to character-group definition header
-    PUNIKERNPAIRTABLE        pKerning;  // pointer to kerning table (may be NULL)
-    // TODO union with character definitions
-    PUNIENDFONTRESOURCE      pEnd;      // pointer to font end signature
-} UNIFONTFACE, *PUNIFONTFACE;
+*/
 
 
 // Record structure for the Uni-font glyphs container
@@ -283,13 +334,13 @@ typedef struct _Comp_Font_Data {
 
 // Window data for uni-font properties dialog
 typedef struct _Uni_Font_Data {
-    USHORT         cb;                      // size of this structure
-    HAB            hab;                     // anchor-block handle
-    HMQ            hmq;                     // msg-queue handle
-    HWND           hwndMain;                // handle of main program window
-    BOOL           fEditExisting;           // we are editing/viewing an existing component
-    PUNIFONTHEADER pFontHeader;             // pointer to the current Unifont resource header
-    PVOID          pFontData;               // pointer to the variable-format font data
+    USHORT           cb;                    // size of this structure
+    HAB              hab;                   // anchor-block handle
+    HMQ              hmq;                   // msg-queue handle
+    HWND             hwndMain;              // handle of main program window
+    BOOL             fEditExisting;         // we are editing/viewing an existing component
+    PUNIFONTRESOURCE pFontHeader;           // pointer to the current Unifont resource header
+    PVOID            pFontData;             // pointer to the variable-format font data
 } UFPROPS, *PUFPROPS;
 
 
@@ -306,9 +357,10 @@ typedef struct _Global_Data {
     USHORT  usType;                         // current font type
     union {
         COMBFONTFILE      combined;         // when FONT_TYPE_CMB
+        PCRFILE           pcr;              // when FONT_TYPE_PCR
         ABRFILE           abr;              // when FONT_TYPE_ABR
-        UNIFONTFACE       unifont;          // when FONT_TYPE_UFF
         PUNIFONTDIRECTORY pUFontDir;        // when FONT_TYPE_UNI
+        UNIFONTFACE       unifont;          // when FONT_TYPE_UFF
     } font;
 } CFEGLOBAL, *PCFEGLOBAL;
 

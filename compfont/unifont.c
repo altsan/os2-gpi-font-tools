@@ -81,7 +81,7 @@ BOOL ParseFont_UNI( PGENERICRECORD pStart, PCFEGLOBAL pGlobal )
 void PopulateValues_UNI( HWND hwnd, PCFEGLOBAL pGlobal )
 {
     PUNIFONTRESOURCEENTRY pDirEntry;  // A resource entry in the font directory
-    PUNIFONTHEADER        pFont;      // Start of the actual font resource
+    PUNIFONTRESOURCE      pFont;      // Start of the actual font resource
 
     HWND         hwndCnr;
     PCFRECORD    pRec,
@@ -90,19 +90,19 @@ void PopulateValues_UNI( HWND hwnd, PCFEGLOBAL pGlobal )
     PSZ          pszFace;
     ULONG        i,
                  ulCB;
-
-//    CHAR           szFamilyName[ 256 ];
-//    USHORT         usRegistry;
-//    BOOL           fLicensed;
-//    PSZ            pszFamily;
-
+/*
+    CHAR         szFamilyName[ 256 ];
+    USHORT       usRegistry;
+    BOOL         fLicensed;
+    PSZ          pszFamily;
+*/
 
 
     if ( !pGlobal->font.pUFontDir->ulUniFontResources )
         return;
 
 /*
-    pFont = (PUNIFONTHEADER)((PBYTE) pGlobal->font.pUFontDir +
+    pFont = (PUNIFONTRESOURCE)((PBYTE) pGlobal->font.pUFontDir +
                               pGlobal->font.pUFontDir->FontResEntry[ 0 ].offsetUniFont );
 
     pszFamily = (( pFont->metrics.flOptions & UNIFONTMETRICS_FULLFAMILYNAME_EXIST ) &&
@@ -126,28 +126,28 @@ void PopulateValues_UNI( HWND hwnd, PCFEGLOBAL pGlobal )
     for ( i = 0; i < pGlobal->font.pUFontDir->ulUniFontResources; i++ ) {
         pDirEntry = (PUNIFONTRESOURCEENTRY) &(pGlobal->font.pUFontDir->FontResEntry[ i ]);
         if ( !pDirEntry->offsetUniFont ) continue;
-        pFont = (PUNIFONTHEADER)((PBYTE) pGlobal->font.pUFontDir
+        pFont = (PUNIFONTRESOURCE)((PBYTE) pGlobal->font.pUFontDir
                                          + pDirEntry->offsetUniFont );
-        if (( (ULONG) pFont->signature.Identity != SIG_UNFS ) ||
-            ( strcmp( pFont->signature.szSignature, UNIFNT_SIGNATURE ) != 0 ) ||
-            ( (ULONG) pFont->definition.Identity != SIG_UNFH ))
+        if (( (ULONG) pFont->unifSignature.Identity != SIG_UNFS ) ||
+            ( strcmp( pFont->unifSignature.szSignature, UNIFNT_SIGNATURE ) != 0 ) ||
+            ( (ULONG) pFont->unifDefHeader.Identity != SIG_UNFH ))
             continue;
 /*
-        pszFamily = (( pFont->metrics.flOptions & UNIFONTMETRICS_FULLFAMILYNAME_EXIST ) &&
-                     (*(pFont->metrics.szFullFamilyname))) ?
-                        pFont->metrics.szFullFamilyname    :
-                        pFont->metrics.ifiMetrics.szFamilyname;
+        pszFamily = (( pFont->unifMetrics.flOptions & UNIFONTMETRICS_FULLFAMILYNAME_EXIST ) &&
+                     (*(pFont->unifMetrics.szFullFamilyname))) ?
+                        pFont->unifMetrics.szFullFamilyname    :
+                        pFont->unifMetrics.ifiMetrics.szFamilyname;
 */
-        pszFace = (( pFont->metrics.flOptions & UNIFONTMETRICS_FULLFACENAME_EXIST ) &&
-                     (*(pFont->metrics.szFullFacename))) ?
-                        pFont->metrics.szFullFacename    :
-                        pFont->metrics.ifiMetrics.szFacename;
+        pszFace = (( pFont->unifMetrics.flOptions & UNIFONTMETRICS_FULLFACENAME_EXIST ) &&
+                     (*(pFont->unifMetrics.szFullFacename))) ?
+                        pFont->unifMetrics.szFullFacename    :
+                        pFont->unifMetrics.ifiMetrics.szFacename;
         //if ( strcmp( szFamilyName, pszFamily ) != 0 ) continue;
 
         pRec->pszFace = strdup( pszFace );
         pRec->pszRanges = (PSZ) calloc( SZRANGES_MAXZ, 1 );     // use Ranges field for font type
         pRec->pszFlags = (PSZ) calloc( SZFLAGS_MAXZ, 1 );
-        switch ( pFont->definition.flFontDef ) {
+        switch ( pFont->unifDefHeader.flFontDef ) {
             case UNIFONTDEF_TYPE_1_FONTDEF:
                 strncpy( pRec->pszRanges, "Fixed-width", SZRANGES_MAXZ-1 );
             case UNIFONTDEF_TYPE_2_FONTDEF:     // == UNIFONTDEF_TYPE_3_FONTDEF
@@ -277,6 +277,34 @@ void SetupCnrUF( HWND hwnd )
     WinSendMsg( hwndCnr, CM_INSERTDETAILFIELDINFO,
                 MPFROMP( pFld1st ), MPFROMP( &finsert ));
 
+}
+
+
+/* ------------------------------------------------------------------------- *
+ * AddUniFont                                                                *
+ *                                                                           *
+ * Brings up the dialog to add a new font to a Uni-font file.                *
+ *                                                                           *
+ * ARGUMENTS:                                                                *
+ *   HWND hwnd         : handle of the main program dialog.                  *
+ *   PCFEGLOBAL pGlobal: pointer to global program data.                     *
+ *                                                                           *
+ * RETURNS: N/A                                                              *
+ * ------------------------------------------------------------------------- */
+void AddUniFont( HWND hwnd, PCFEGLOBAL pGlobal )
+{
+    UFPROPS         ufprops;
+    UNIFONTRESOURCE font = {0};
+
+    ufprops.cb = sizeof( UFPROPS );
+    ufprops.hab = pGlobal->hab;
+    ufprops.hmq = pGlobal->hmq;
+    ufprops.hwndMain = hwnd;
+    ufprops.fEditExisting = FALSE;
+    ufprops.pFontHeader = &font;
+    ufprops.pFontData = NULL;
+    WinDlgBox( HWND_DESKTOP, hwnd, (PFNWP) UniFontDlgProc,
+               NULLHANDLE, IDD_UNIFONT, &ufprops );
 }
 
 
@@ -424,4 +452,6 @@ MRESULT EXPENTRY UniFontDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
 
     return WinDefDlgProc( hwnd, msg, mp1, mp2 );
 }
+
+
 
