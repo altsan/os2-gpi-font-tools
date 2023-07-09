@@ -1,5 +1,5 @@
 COMPFONT - OS/2 Composite Font Editor/Inspector
-(C) 2016 Alexander Taylor
+(C) 2016-2023 Alexander Taylor
 
 This is intended to be a simple graphical tool for creating, editing, or
 examining the various composite font formats defined by OS/2 Presentation
@@ -10,7 +10,8 @@ or creating files.  At present, it may be used to examine existing composite
 font files, with some limitations.
 
 The term 'composite font' is used by this program as an overall term for
-several different (but related) font formats.
+several different (but related) font formats, described below.  Eventually,
+COMPFONT should be capable of opening and parsing all of these formats.
 
 
 COMBINED FONT FILE
@@ -48,15 +49,13 @@ of the combined font format used for particular purposes:
       rendered on-screen at low-to-moderate resolutions, whereas hand-tuned
       bitmaps are much more readable.  (This technique pre-dates the
       widespread availability of TrueType fonts with embedded bitmaps, which
-      serve the same purpose.)
+      serve a similar purpose.)
 
   Pre-Combine Rule File:  Unlike a regular combined font, a PCR does not
       create a separate logical font with a new name.  Instead, it allows an
       existing font to load characters from another, associated, font on
       demand whenever an application requests a character which the original
       font does not support.
-
-COMPFONT should be capable of opening and parsing all of the above types.
 
 
 UNI-FONT FILE
@@ -82,24 +81,24 @@ format is supported in theory; however, this driver apparently also implements
 support for the combined font format, and is probably included in OS/2 for
 this reason.
 
-Some logic for handling this format has been implemented in COMPFONT; however
+Some logic for reading this format has been implemented in COMPFONT; however
 it is incomplete and (lacking any actual fonts to test with) 100% untested.
 
 
 LICENSE
 
-OS/2-GPI Composite Font Editor/Inspector                             
-Copyright (C) 2016 Alexander Taylor                                  
-                                                                     
-This program is free software: you can redistribute it and/or modify 
-it under the terms of the GNU General Public License as published by 
-the Free Software Foundation, either version 3 of the License, or    
-(at your option) any later version.                                  
-                                                                     
-This program is distributed in the hope that it will be useful,      
-but WITHOUT ANY WARRANTY; without even the implied warranty of       
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the        
-GNU General Public License for more details.                         
-                                                                     
-You should have received a copy of the GNU General Public License    
+OS/2-GPI Composite Font Editor/Inspector
+Copyright (C) 2016-2023 Alexander Taylor
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.

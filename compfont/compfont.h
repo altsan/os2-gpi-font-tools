@@ -197,6 +197,16 @@ typedef struct _abr_file_data {
 } ABRFILE, *PABRFILE;
 
 
+// Contains pointers to all the components of a PCR file
+typedef struct _pcr_file_data {
+    PPRECOMBRULESIGNATURE  pSignature;    // pointer to the start of the font
+    PFONTASSOCIATION       pSourceAssoc;  // pointer to the source font association structure
+    PTARGETFONTASSOCHEADER pTargetHeader; // pointer to the target font association header
+    PFONTASSOCIATION       pAssociations; // pointer to the array of target font associations
+    PPRECOMBRULEEND        pEnd;          // pointer to the font end signature
+} PCRFILE, *PPCRFILE;
+
+
 // Wrapper for the various fixed Unifont data blocks preceding the variable data
 typedef struct _uni_font_wrapper {
     UNIFONTSIGNATURE        signature;  // font signature block

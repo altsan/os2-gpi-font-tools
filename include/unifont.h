@@ -143,26 +143,25 @@ typedef IFIMETRICS32 *PIFIMETRICS32;
  *  - Font signature                         (UNIFONTSIGNATURE)
  *  - Font metrics                           (UNIFONTMETRICS)
  *  - Font definition header                 (UNIFONTDEFINITIONHEADER)
- *  - Character group definitions (1)        (UNICHARGROUPDEFINITION)
+ *  - (OPTIONAL) Character group definitions (UNICHARGROUPDEFINITION)
  *  - (OPTIONAL) Kerning table               (UNIKERNPAIRTABLE)
- *  - Character definitions (1)              (variable format)
+ *  - (OPTIONAL) Character definitions       (variable format)
  *  - The font end signature                 (UNIENDFONTRESOURCE)
  *
  * The font image data (glyph bitmaps) follow the font character definitions.
  *
- * (1) It is actually possible for a Uni-font to lack both the character group
- * and character definitions (indicated by UNIFONT_VIRTUAL_FONT in the flUniFont
+ * It is actually possible for a Uni-font to lack both the character group and
+ * character definitions (indicated by UNIFONT_VIRTUAL_FONT in the flUniFont
  * field of the UNIFONTRESOURCEENTRY structure).  Such a font is called a
  * "virtual font", and contains no glyphs in and of itself.  (AFAIK this is
- * mainly used on DBCS systems where a special kind of combined-font file called
- * an "associated bitmaps rule" may be defined to associate separately-loaded
- * bitmaps with an existing font name and point size.  This allows multiple
- * fonts to share glyph bitmaps.  What's usually done is that the bitmaps are
- * associated with certain point sizes of one or more outline fonts to improve
- * their on-screen appearance - similar to TTF/OTF embedded bitmaps except that
- * the bitmaps are independent of the outline font - and then a virtual font is
- * also created to allow those bitmaps to be used as a standalone screen font as
- * well.)
+ * similar to how Associated Bitmaps Rule files are used defined to associate
+ * separately-loaded bitmaps with an existing font name and point size, thereby
+ * allowing multiple fonts to share glyph bitmaps.  In that case, the bitmaps
+ * are typically associated with certain point sizes of one or more outline fonts
+ * to improve their on-screen appearance - similar to TTF/OTF embedded bitmaps -
+ * - and then a virtual font is also created to allow those bitmaps to be used as
+ * a standalone screen font as well.  UNIFONT_VIRTUAL_FONT presumably does
+ * something similar for Uni-fonts.)
  */
 
 
@@ -185,6 +184,7 @@ typedef struct _UNIFONTRESOURCEENTRY {
                             /* This field will be specified only when the   */
                             /* font is defined as a virtual font.           */
 } UNIFONTRESOURCEENTRY;
+typedef UNIFONTRESOURCEENTRY *PUNIFONTRESOURCEENTRY;
 
 
 

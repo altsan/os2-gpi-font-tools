@@ -80,19 +80,30 @@ BOOL ParseFont_UNI( PGENERICRECORD pStart, PCFEGLOBAL pGlobal )
  * ------------------------------------------------------------------------- */
 void PopulateValues_UNI( HWND hwnd, PCFEGLOBAL pGlobal )
 {
-    PUNIFONTHEADER pFont;
-    CHAR           szFamilyName[ 256 ];
-    USHORT         usRegistry;
-    BOOL           fLicensed;
-    PSZ            pszFamily, pszFace;
-    ULONG          i;
+    PUNIFONTRESOURCEENTRY pDirEntry;  // A resource entry in the font directory
+    PUNIFONTHEADER        pFont;      // Start of the actual font resource
+
+    HWND         hwndCnr;
+    PCFRECORD    pRec,
+                 pFirst;
+    RECORDINSERT ri;
+    PSZ          pszFace;
+    ULONG        i,
+                 ulCB;
+
+//    CHAR           szFamilyName[ 256 ];
+//    USHORT         usRegistry;
+//    BOOL           fLicensed;
+//    PSZ            pszFamily;
+
 
 
     if ( !pGlobal->font.pUFontDir->ulUniFontResources )
         return;
 
+/*
     pFont = (PUNIFONTHEADER)((PBYTE) pGlobal->font.pUFontDir +
-                              pGlobal->font.pUFontDir->FontResEntry[0].offsetUniFont );
+                              pGlobal->font.pUFontDir->FontResEntry[ 0 ].offsetUniFont );
 
     pszFamily = (( pFont->metrics.flOptions & UNIFONTMETRICS_FULLFAMILYNAME_EXIST ) &&
                  (*(pFont->metrics.szFullFamilyname))) ?
@@ -101,22 +112,63 @@ void PopulateValues_UNI( HWND hwnd, PCFEGLOBAL pGlobal )
     strncpy( szFamilyName, pszFamily, FACESIZE-1 );
     usRegistry = pFont->metrics.ifiMetrics.idRegistry;
     fLicensed = ( pFont->metrics.ifiMetrics.flType & IFIMETRICS32_LICENSED ) ? TRUE : FALSE;
+*/
+
+    // Populate the container with the list of fonts included in the file
+    hwndCnr = WinWindowFromID( hwnd, IDD_COMPONENTS );
+    ulCB = sizeof( CFRECORD ) - sizeof( MINIRECORDCORE );
+    pRec = (PCFRECORD) WinSendMsg( hwndCnr, CM_ALLOCRECORD,
+                                   MPFROMLONG( ulCB ),
+                                   MPFROMLONG( pGlobal->font.pUFontDir->ulUniFontResources ));
+    pFirst = pRec;
+    ulCB = sizeof( MINIRECORDCORE );
 
     for ( i = 0; i < pGlobal->font.pUFontDir->ulUniFontResources; i++ ) {
-        pFont = (PUNIFONTHEADER)((PBYTE) pGlobal->font.pUFontDir +
-                                  pGlobal->font.pUFontDir->FontResEntry[i].offsetUniFont );
+        pDirEntry = (PUNIFONTRESOURCEENTRY) &(pGlobal->font.pUFontDir->FontResEntry[ i ]);
+        if ( !pDirEntry->offsetUniFont ) continue;
+        pFont = (PUNIFONTHEADER)((PBYTE) pGlobal->font.pUFontDir
+                                         + pDirEntry->offsetUniFont );
+        if (( (ULONG) pFont->signature.Identity != SIG_UNFS ) ||
+            ( strcmp( pFont->signature.szSignature, UNIFNT_SIGNATURE ) != 0 ) ||
+            ( (ULONG) pFont->definition.Identity != SIG_UNFH ))
+            continue;
+/*
         pszFamily = (( pFont->metrics.flOptions & UNIFONTMETRICS_FULLFAMILYNAME_EXIST ) &&
                      (*(pFont->metrics.szFullFamilyname))) ?
                         pFont->metrics.szFullFamilyname    :
                         pFont->metrics.ifiMetrics.szFamilyname;
+*/
         pszFace = (( pFont->metrics.flOptions & UNIFONTMETRICS_FULLFACENAME_EXIST ) &&
                      (*(pFont->metrics.szFullFacename))) ?
                         pFont->metrics.szFullFacename    :
                         pFont->metrics.ifiMetrics.szFacename;
-        if ( strcmp( szFamilyName, pszFamily ) != 0 ) continue;
+        //if ( strcmp( szFamilyName, pszFamily ) != 0 ) continue;
 
-        // Add this face to the container
+        pRec->pszFace = strdup( pszFace );
+        pRec->pszRanges = (PSZ) calloc( SZRANGES_MAXZ, 1 );     // use Ranges field for font type
+        pRec->pszFlags = (PSZ) calloc( SZFLAGS_MAXZ, 1 );
+        switch ( pFont->definition.flFontDef ) {
+            case UNIFONTDEF_TYPE_1_FONTDEF:
+                strncpy( pRec->pszRanges, "Fixed-width", SZRANGES_MAXZ-1 );
+            case UNIFONTDEF_TYPE_2_FONTDEF:     // == UNIFONTDEF_TYPE_3_FONTDEF
+                strncpy( pRec->pszRanges, "Proportional-width", SZRANGES_MAXZ-1 );
+            default:
+                strncpy( pRec->pszRanges, "Unknown", SZRANGES_MAXZ-1 );
+        }
+        sprintf( pRec->pszFlags, "0x%X", pDirEntry->flUniFont );
+
+        pRec->record.cb = ulCB;
+        pRec->record.pszIcon = pRec->pszFace;
+        pRec->ulIndex = i;
+        pRec = (PCFRECORD) pRec->record.preccNextRecord;
     }
+    ri.cb                = sizeof( RECORDINSERT );
+    ri.pRecordOrder      = (PRECORDCORE) CMA_END;
+    ri.pRecordParent     = NULL;
+    ri.zOrder            = (ULONG) CMA_TOP;
+    ri.fInvalidateRecord = TRUE;
+    ri.cRecordsInsert    = pGlobal->font.pUFontDir->ulUniFontResources;
+    WinSendMsg( hwndCnr, CM_INSERTRECORD, MPFROMP( pFirst ), MPFROMP( &ri ));
 
 }
 
@@ -177,7 +229,7 @@ void SetupCnrUF( HWND hwnd )
     WinSetDlgItemText( hwnd, IDD_STATUS, "Uni-Font File");
 
     // update the container & groupbox layout
-    WinSetDlgItemText( hwnd, IDD_GROUPBOX, "Included font faces");
+    WinSetDlgItemText( hwnd, IDD_GROUPBOX, "Included font resources");
     aptl[0].x = 285;
     aptl[0].y = 120;
     aptl[1].x = 275;
@@ -206,17 +258,17 @@ void SetupCnrUF( HWND hwnd )
     pFld->flData     = CFA_STRING | CFA_FIREADONLY | CFA_VCENTER | CFA_HORZSEPARATOR | CFA_SEPARATOR;
     pFld->offStruct  = FIELDOFFSET( CFRECORD, pszFace );
     pFld = pFld->pNextFieldInfo;
-    // (second column: resolution)
+    // (second column: font type)
     pFld->cb = sizeof( FIELDINFO );
-    pFld->pTitleData = "Resolution";
-    pFld->flData     = CFA_STRING | CFA_FIREADONLY | CFA_VCENTER | CFA_HORZSEPARATOR | CFA_SEPARATOR;
-    pFld->offStruct  = FIELDOFFSET( CFRECORD, pszFlags );
-    pFld = pFld->pNextFieldInfo;
-    // (third column: included glyphs)
-    pFld->cb = sizeof( FIELDINFO );
-    pFld->pTitleData = "Number of Glyphs";
+    pFld->pTitleData = "Type";
     pFld->flData     = CFA_STRING | CFA_FIREADONLY | CFA_VCENTER | CFA_HORZSEPARATOR;
     pFld->offStruct  = FIELDOFFSET( CFRECORD, pszRanges );
+    pFld = pFld->pNextFieldInfo;
+    // (third column: flags)
+    pFld->cb = sizeof( FIELDINFO );
+    pFld->pTitleData = "Flags";
+    pFld->flData     = CFA_STRING | CFA_FIREADONLY | CFA_VCENTER | CFA_HORZSEPARATOR | CFA_SEPARATOR;
+    pFld->offStruct  = FIELDOFFSET( CFRECORD, pszFlags );
 
     finsert.cb                   = (ULONG) sizeof( FIELDINFOINSERT );
     finsert.pFieldInfoOrder      = (PFIELDINFO) CMA_END;
