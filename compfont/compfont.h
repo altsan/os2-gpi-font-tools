@@ -169,12 +169,22 @@
 
 #pragma pack(1)
 
-// A simple linked list of font associations (used for CMB and PCR files)
-typedef struct _font_assoc_node {
-    FONTASSOCIATION         font;       // the current component font association
-    struct _font_assoc_node *pNext;     // pointer to next component
-} FONTASSOCLIST, *PFONTASSOCLIST;
+// FONTASSOCIATION structure without the GlyphRange array.  It is otherwise
+// identical to the FONTASSOCIATION structure.
+typedef struct _FONTASSOCIATION1 {
+    ULONG                Identity;        /* Must be 0x53415446 ("FTAS").   */
+    ULONG                ulSize;
+    UNIFONTMETRICSMEMBER unimbr;
+    UNIFONTMETRICS       unifm;
+    ULONG                ulGlyphRanges;
+    ULONG                flFlags;
+} FONTASSOCIATION1;
+typedef FONTASSOCIATION1 *PFONTASSOCIATION1;
 
+typedef struct _font_association_data {
+    FONTASSOCIATION1 font;          // the current component font association
+    PGLINKEDLIST     pRangeList;    // linked list of glyph ranges
+} ASSOCIATIONDATA, *PASSOCIATIONDATA;
 
 // Contains pointers to all the components of a combined font
 // (Note: this does not quite reflect the actual file structure on disk, as we
@@ -183,7 +193,7 @@ typedef struct _cmb_font_data {
     PCOMBFONTSIGNATURE pSignature;      // pointer to the font signature block
     PCOMBFONTMETRICS   pMetrics;        // pointer to the font metrics block
     ULONG              ulCmpFonts;      // number of component fonts
-    PFONTASSOCLIST     pFontList;       // linked list of font component definitions
+    PGLINKEDLIST       pFontList;       // linked list of font component definitions
     PCOMBFONTEND       pEnd;            // pointer to the font end signature
 } COMBFONTFILE, *PCOMBFONTFILE;
 
@@ -195,7 +205,7 @@ typedef struct _pcr_file_data {
     PFONTASSOCIATION       pSourceAssoc;  // pointer to the source font association structure
     PTARGETFONTASSOCHEADER pTargetHeader; // pointer to the target font association header
     PPRECOMBRULEEND        pEnd;          // pointer to the font end signature
-    PFONTASSOCLIST         pFontList;     // linked list of target font definitions
+    PGLINKEDLIST           pFontList;     // linked list of target font definitions
 } PCRFILE, *PPCRFILE;
 
 
@@ -218,62 +228,23 @@ typedef struct _unifont_char_data {
 } UNIFONTCHARACTER, *PUNIFONTCHARACTER;
 
 
-// A linked list of Uni-font character data
-typedef struct _unifont_chardef_node {
-    UNIFONTCHARACTER              character; // character data
-    struct _unifont_chardef_node *pNext;     // pointer to next character
-} UNIFONTCHARLIST, *PUNIFONTCHARLIST;
-
-
-// A linked list of Uni-font character groups
-typedef struct _unifont_chargroup_node {
-    UNICHARGROUPENTRY               group;  // the current character group
-    PUNIFONTCHARLIST                pChars; // linked list of character data
-    struct _unifont_chargroup_node *pNext;  // pointer to next group
-} UNIFONTGROUPLIST, *PUNIFONTGROUPLIST;
-
-
-// A linked list of Uni-font kerning pairs
-typedef struct _unifont_kern_pair_node {
-    UNIKERNINGPAIR                  pair;   // the current kerning pair
-    struct _unifont_kern_pair_node *pNext;  // pointer to next kerning pair
-} UNIFONTKERNPAIRLIST, *PUNIFONTKERNPAIRLIST;
-
-
 // Data about a Uni-font resource
 typedef struct _uni_font_data {
     PUNIFONTRESOURCE         pHeader;       // pointer to amalgamated header
     PUNIENDFONTRESOURCE      pEnd;          // pointer to font end signature
     ULONG                    ulKernPairs;   // number of pairs in the kerning table
     ULONG                    ulGroups;      // number of character groups in the font
-    PUNIFONTKERNPAIRLIST     pKerning;      // linked list of kerning pairs
-    PUNIFONTGROUPLIST        pGroups;       // linked list of character group definitions
+    PGLINKEDLIST             pKerning;      // linked list of kerning pairs
+    PGLINKEDLIST             pGroups;       // linked list of character group definitions
 } UNIFONTFACE, *PUNIFONTFACE;
-
-
-// A linked list of Uni-font resources
-typedef struct _unifont_face_node {
-    UNIFONTFACE                font;        // the current uni-font resource
-    struct _unifont_face_node *pNext;       // pointer to next resource
-} UNIFONTFACELIST, *PUNIFONTFACELIST;
 
 
 // Contains pointers to the contents of a Uni-font file, plus the internal
 // data maintained when creating or modifying it.
 typedef struct _uni_font_file_data {
     PUNIFONTDIRECTORY   pFontDir;       // pointer to the original font file
-    PUNIFONTFACELIST    pFontList;      // linked list of font face resources
+    PGLINKEDLIST        pFontList;      // linked list of font face resources
 } UNIFONTFILE, *PUNIFONTFILE;
-
-
-/* Just use PUNIFONTRESOURCE from unifont.h instead (ALT)
-// Wrapper for the various fixed Uni-font data blocks preceding the variable data
-typedef struct _uni_font_wrapper {
-    UNIFONTSIGNATURE        signature;  // font signature block
-    UNIFONTMETRICS          metrics;    // font metrics block
-    UNIFONTDEFINITIONHEADER definition; // font definition header
-} UNIFONTHEADER, *PUNIFONTHEADER;
-*/
 
 
 // Record structure for the Uni-font glyphs container
@@ -328,7 +299,7 @@ typedef struct _Comp_Font_Data {
     HMQ              hmq;                   // msg-queue handle
     HWND             hwndMain;              // handle of main program window
     BOOL             fEditExisting;         // we are editing/viewing an existing component
-    PFONTASSOCIATION pCFA;                  // pointer to the current component-font association
+    PASSOCIATIONDATA pCFA;                  // pointer to the current component-font association
 } CFPROPS, *PCFPROPS;
 
 
@@ -381,7 +352,7 @@ MRESULT EXPENTRY ImportDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
 MRESULT EXPENTRY MainDialogProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
 void             NewFontFile( HWND hwnd, PCFEGLOBAL pGlobal, USHORT usType );
 MRESULT EXPENTRY ProductInfoDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
-void             PopulateMetricFlags( HWND hwndCnr, PFONTASSOCIATION pFA );
+void             PopulateMetricFlags( HWND hwndCnr, PFONTASSOCIATION1 pFA );
 MRESULT EXPENTRY RangeDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 );
 USHORT           ReadFontFile( HWND hwnd, PSZ pszfile, PCFEGLOBAL pGlobal  );
 BOOL             SelectInstalledFont( HWND hwnd, PSZ pszFacename );
@@ -395,8 +366,10 @@ MRESULT EXPENTRY CompFontDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
 void             ComponentListDelete( PCOMBFONTFILE pCombFont, ULONG ulIndex );
 void             ComponentListFree( PCOMBFONTFILE pCombFont );
 BOOL             ComponentListInit( PCOMBFONTFILE pCombFont, PCOMPFONTHEADER pComponents );
-BOOL             ComponentListInsert( PCOMBFONTFILE pCombFont, PFONTASSOCIATION pCompFont, ULONG ulIndex );
+BOOL             ComponentListInsert( PCOMBFONTFILE pCombFont, PFONTASSOCIATION pAssociation, ULONG ulIndex );
 void             EditComponentFont( HWND hwnd, PCFEGLOBAL pGlobal, ULONG ulAssoc );
+void             GlyphRangeListFree( PASSOCIATIONDATA pAssociation );
+BOOL             GlyphRangeListInit( PASSOCIATIONDATA pAssociation, PFONTASSOCIATION pFA );
 BOOL             InitFontStructure_CMB( PCFEGLOBAL pGlobal, ULONG cbSig, ULONG cbMetrics, ULONG cbEnd );
 BOOL             NewFont_CMB( HWND hwnd, PCFEGLOBAL pGlobal );
 BOOL             ParseFont_CMB( PGENERICRECORD pStart, PCFEGLOBAL pGlobal );

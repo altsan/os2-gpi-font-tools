@@ -12,7 +12,7 @@ CFLAGS = /Gm /Ss /Sp1 /Q /Wpar /Wuse /I$(INCDIR)
 RFLAGS = -n -i $(INCDIR)
 LFLAGS = /PMTYPE:PM /NOLOGO /MAP
 NAME   = compfont
-OBJS   = $(NAME).obj abr.obj combined.obj unifont.obj
+OBJS   = $(NAME).obj abr.obj combined.obj unifont.obj gllist.obj
 MRI    = $(NAME)
 LIBS   =
 

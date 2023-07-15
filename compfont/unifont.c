@@ -32,7 +32,8 @@
 
 #include "ids.h"
 #include "cmbfont.h"                        // includes unifont.h
-#include "gpifont.h"
+#include "gpifont.h"                        // for GENERICRECORD
+#include "gllist.h"                         // generic linked list
 #include "compfont.h"
 
 

@@ -13,6 +13,10 @@ The term 'composite font' is used by this program as an overall term for
 several different (but related) font formats, described below.  Eventually,
 COMPFONT should be capable of opening and parsing all of these formats.
 
+Of the types listed below, alias files and associated bitmap rules are known
+to be implemented in OS/2 4.5x.  It is uncertain whether the other types are
+supported or not.
+
 
 COMBINED FONT FILE
 
@@ -55,7 +59,9 @@ of the combined font format used for particular purposes:
       create a separate logical font with a new name.  Instead, it allows an
       existing font to load characters from another, associated, font on
       demand whenever an application requests a character which the original
-      font does not support.
+      font does not support.  (NOTE: This format was defined in IBM's design
+      documentation, but it is unclear whether or not it was ever actually
+      implemented.)
 
 
 UNI-FONT FILE

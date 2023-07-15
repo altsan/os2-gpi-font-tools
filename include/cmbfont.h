@@ -160,11 +160,15 @@ typedef struct _UNIFONTMETRICSMEMBER {
 typedef UNIFONTMETRICSMEMBER *PUNIFONTMETRICSMEMBER;
 
 
-
+/* These are presumably values for the flFlags field of FONTASSOCIATION.    */
 #define FONTASSOC_H_SCALING   0x00000001  /* Horizontal scaling             */
 #define FONTASSOC_V_SCALING   0x00000002  /* Vertical scaling               */
 #define FONTASSOC_NO_XLATION  0x00000004  /* No translation                 */
 
+/* The documented description is vague, but how this presumably works is    */
+/* that if (for example) giStart is 10, giEnd is 20, and giTarget is 100,   */
+/* then the source font would map its glyph 10 to the target font's glyph   */
+/* 100, glyph 11 to the target font's glyph 101, etc.                       */
 typedef struct _FONTASSOCGLYPHRANGE {
     GLYPH giStart;                  /* Start glyph index                    */
     GLYPH giEnd;                    /* End glyph index                      */

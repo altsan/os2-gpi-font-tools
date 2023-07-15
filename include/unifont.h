@@ -192,7 +192,7 @@ typedef UNIFONTRESOURCEENTRY *PUNIFONTRESOURCEENTRY;
 #define UNIFONT_WRITABLE  0x2
 
 typedef struct _UNIFONTDIRECTORY {
-    UCHAR Identity[4];                     /* "UNFD"                        */
+    ULONG Identity;                        /* Must be 0x44464E55 ("UNFD")   */
 
     ULONG ulSize;                          /* The size of the structure, in */
                                            /* bytes, including all entries  */
@@ -227,7 +227,7 @@ typedef UNIFONTDIRECTORY *PUNIFONTDIRECTORY;
 #define UNIFONT_PANOSE_EXIST        0x2
 
 typedef struct _UNIFONTSIGNATURE {
-    UCHAR Identity[4];          /* "UNFS"                                   */
+    ULONG Identity;             /* 0x53464E55 ("UNFS")                      */
     ULONG ulSize;               /* The size of the structure in bytes.      */
     UCHAR szSignature [24];     /* Must be "UNI FONT" (null-terminated).    */
     UCHAR szTechnology[64];     /* Reserved for future use; must be "".     */
@@ -242,7 +242,7 @@ typedef struct _UNIFONTSIGNATURE {
 
 
 typedef struct _UNIENDFONTRESOURCE {
-    UCHAR Identity[4];          /* Must be 0x554E4645 ('UNFE').             */
+    ULONG Identity;             /* Must be 0x554E4645 ('UNFE').             */
     ULONG ulSize;               /* The size of the structure, in bytes.     */
 } UNIENDFONTRESOURCE, *PUNIENDFONTRESOURCE;
 
@@ -265,7 +265,7 @@ typedef struct _UNIENDFONTRESOURCE {
  * idea to always use the contents of ulSize to determine the structure size.)
  */
 typedef struct _UNIFONTMETRICS {
-    UCHAR        Identity[4];   /* "UNFM"                                   */
+    ULONG        Identity;      /* Must be 0x4D464E55 ("UNFM")              */
     ULONG        ulSize;        /* The size of this structure in bytes      */
     IFIMETRICS32 ifiMetrics;    /* Basic font metrics.                      */
     ULONG        flOptions;     /* Option flags:                            */
@@ -327,7 +327,7 @@ typedef UNIFONTMETRICS *PUNIFONTMETRICS;
 #define UNIFONTDEF_TYPE_3_CHARDEF_SIZE  10
 
 typedef struct _UNIFONTDEFINITIONHEADER {
-    UCHAR  Identity[4];     /* Must be equal to 0x554E4648 ('UNFH').         */
+    ULONG  Identity;        /* Must be equal to 0x554E4648 ('UNFH').         */
 
     ULONG  ulSize;          /* Size of this structure in bytes.              */
 
@@ -491,7 +491,7 @@ typedef struct _UNICHARGROUPENTRY {
 
 
 typedef struct _UNICHARGROUPDEFINITION {
-    UCHAR             Identity[4];        /* "UNGH"                         */
+    ULONG             Identity;           /* Must be 0x48474E55 ("UNGH")    */
 
     ULONG             ulSize;             /* Size of this structure in      */
                                           /* bytes, including all entries   */
@@ -542,7 +542,7 @@ typedef struct _UNIKERNINGPAIR {
  */
 
 typedef struct _UNIKERNPAIRTABLE {
-    UCHAR          Identity[4];   /* "UNKT"                                 */
+    ULONG          Identity;      /* Must be 0x544B4E55 ("UNKT")            */
     ULONG          ulSize;        /* Size of this stucture in bytes,        */
                                   /* including all entries of the KernPairs */
                                   /* array.  i.e.:                          */

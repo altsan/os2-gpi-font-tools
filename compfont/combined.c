@@ -32,8 +32,9 @@
 
 #include "ids.h"
 #include "cmbfont.h"                        // includes unifont.h
-#include "gpifont.h"
-#include "compfont.h"
+#include "gpifont.h"                        // for GENERICRECORD
+#include "gllist.h"                         // generic linked list
+#include "compfont.h"                       // program definitions
 
 
 /* ------------------------------------------------------------------------- *
@@ -227,6 +228,7 @@ void SetupWindowCF( HWND hwnd )
 MRESULT EXPENTRY CompFontDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
 {
     static PCFPROPS       pProps;
+    PFONTASSOCGLYPHRANGE  pRange;
     HWND                  hwndCnr;
     HPS                   hps;
     CNRINFO               cnr;
@@ -241,7 +243,6 @@ MRESULT EXPENTRY CompFontDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
     ULONG                 i;
     CHAR                  szText[ SZRANGES_MAXZ ],
                           szFont[ FACESIZE ];
-
 
     switch ( msg ) {
 
@@ -284,7 +285,7 @@ MRESULT EXPENTRY CompFontDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
             fi.cFieldInfoInsert     = 3;
             WinSendMsg( hwndCnr, CM_INSERTDETAILFIELDINFO,
                         MPFROMP( pFld1st ), MPFROMP( &fi ));
-            PopulateMetricFlags( hwndCnr, pProps->pCFA );
+            PopulateMetricFlags( hwndCnr, &(pProps->pCFA->font) );
 
             // Set up the scaling drop-down
             WinSendDlgItemMsg( hwnd, IDD_SCALING, LM_INSERTITEM,
@@ -325,31 +326,30 @@ MRESULT EXPENTRY CompFontDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
             }
             WinEnableControl( hwnd, IDD_MMAPPLY, FALSE );
 
-            sIdx = pProps->pCFA->flFlags ? ((SHORT) pProps->pCFA->flFlags - 1) : 4;
+            sIdx = pProps->pCFA->font.flFlags ? ((SHORT) pProps->pCFA->font.flFlags - 1) : 4;
             if ( sIdx <= 4 ) {
                 WinSendDlgItemMsg( hwnd, IDD_SCALING, LM_SELECTITEM,
                                    MPFROMSHORT( sIdx ), MPFROMSHORT( TRUE ));
             }
             else {
-                sprintf( szText, "0x%08x", pProps->pCFA->flFlags );
+                sprintf( szText, "0x%08x", pProps->pCFA->font.flFlags );
                 WinSetDlgItemText( hwnd, IDD_SCALING, szText );
             }
 
             // Populate the current font's values
             if ( pProps->fEditExisting ) {
-                for ( i = 0; i < pProps->pCFA->ulGlyphRanges; i++ ) {
-                    sprintf( szText, SZ_GLYPHRANGE,
-                             pProps->pCFA->GlyphRange[ i ].giStart,
-                             pProps->pCFA->GlyphRange[ i ].giEnd,
-                             pProps->pCFA->GlyphRange[ i ].giTarget );
-                    WinSendDlgItemMsg( hwnd, IDD_RANGES, LM_INSERTITEM,
-                                       MPFROMSHORT( LIT_END ),
-                                       MPFROMP( szText ));
+                for ( i = 0; i < pProps->pCFA->font.ulGlyphRanges; i++ ) {
+                    pRange = (PFONTASSOCGLYPHRANGE) gl_list_at( pProps->pCFA->pRangeList, i );
+                    if ( pRange ) {
+                        sprintf( szText, SZ_GLYPHRANGE, pRange->giStart, pRange->giEnd, pRange->giTarget );
+                        WinSendDlgItemMsg( hwnd, IDD_RANGES, LM_INSERTITEM,
+                                           MPFROMSHORT( LIT_END ), MPFROMP( szText ));
+                    }
                 }
                 WinSetDlgItemText( hwnd, IDD_FONTNAME,
-                                   ( pProps->pCFA->unifm.flOptions & UNIFONTMETRICS_FULLFACENAME_EXIST ) ?
-                                     pProps->pCFA->unifm.szFullFacename :
-                                     pProps->pCFA->unifm.ifiMetrics.szFacename );
+                                   ( pProps->pCFA->font.unifm.flOptions & UNIFONTMETRICS_FULLFACENAME_EXIST ) ?
+                                     pProps->pCFA->font.unifm.szFullFacename :
+                                     pProps->pCFA->font.unifm.ifiMetrics.szFacename );
             }
             CentreWindow( hwnd, pProps->hwndMain );
             WinShowWindow( hwnd, TRUE );
@@ -423,9 +423,10 @@ MRESULT EXPENTRY CompFontDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
                 case DID_OK:
                     if ( ! WinQueryDlgItemText( hwnd, IDD_FONTNAME, FACESIZE, szFont ))
                         return (MRESULT) 0;
+                    /*
                     if ( !pProps->fEditExisting ) {
-                        pProps->pCFA->Identity = SIG_FTAS;
-                        pProps->pCFA->ulSize   = sizeof( FONTASSOCIATION ); // (?)
+                        pProps->pCFA->font.Identity = SIG_FTAS;
+                        pProps->pCFA->font.ulSize   = sizeof( FONTASSOCIATION ); // (?)
                     }
                     // Get the metrics of the indicated font face
                     hps = WinGetScreenPS( HWND_DESKTOP );
@@ -443,6 +444,7 @@ MRESULT EXPENTRY CompFontDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
                     //          allocate pProps->pCFA->GlyphRange[]
                     //      populate pProps->pCFA->GlyphRange[]
                     //
+                    */
                     break;
 
 
@@ -548,7 +550,7 @@ MRESULT EXPENTRY CompFontDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
 void AddComponentFont( HWND hwnd, PCFEGLOBAL pGlobal )
 {
     CFPROPS         cfprops;
-    FONTASSOCIATION ftas = {0};
+    ASSOCIATIONDATA ftas = {0};
 
     cfprops.cb = sizeof( CFPROPS );
     cfprops.hab = pGlobal->hab;
@@ -576,7 +578,7 @@ void AddComponentFont( HWND hwnd, PCFEGLOBAL pGlobal )
  * ------------------------------------------------------------------------- */
 void EditComponentFont( HWND hwnd, PCFEGLOBAL pGlobal, ULONG ulAssoc )
 {
-    CFPROPS          cfprops;
+/*
     PFONTASSOCLIST   pNode;
     PFONTASSOCIATION pAssocCopy,    // a working copy of the current association
                      pAssocOrig;    // pointer to the original font association
@@ -588,8 +590,7 @@ void EditComponentFont( HWND hwnd, PCFEGLOBAL pGlobal, ULONG ulAssoc )
         pNode = pNode->pNext;
     if ( i < ulAssoc ) return;  // error, bad index
     pAssocOrig = &(pNode->font);
-
-    cbFA = sizeof( FONTASSOCIATION ) +
+    cbFA = sizeof( FONTASSOCIATION1 ) +
            ( pAssocOrig->ulGlyphRanges * sizeof( FONTASSOCGLYPHRANGE )) -
            sizeof( FONTASSOCGLYPHRANGE );
 
@@ -598,19 +599,26 @@ void EditComponentFont( HWND hwnd, PCFEGLOBAL pGlobal, ULONG ulAssoc )
         return;
     }
     memcpy( pAssocCopy, pAssocOrig, cbFA );
+    cfprops.pCFA = pAssocCopy;
+*/
+
+    CFPROPS          cfprops = {0};
+    PASSOCIATIONDATA pAssociation;  // pointer to the font association data
+
+    pAssociation = gl_list_at( pGlobal->font.combined.pFontList, ulAssoc );
+    if ( pAssociation == NULL ) {
+        ErrorPopup("Invalid font association.");
+        return;
+    }
 
     cfprops.cb = sizeof( CFPROPS );
     cfprops.hab = pGlobal->hab;
     cfprops.hmq = pGlobal->hmq;
     cfprops.hwndMain = hwnd;
     cfprops.fEditExisting = TRUE;
-    cfprops.pCFA = pAssocCopy;
+    cfprops.pCFA = pAssociation;
     WinDlgBox( HWND_DESKTOP, hwnd, (PFNWP) CompFontDlgProc,
                NULLHANDLE, IDD_COMPFONT, &cfprops );
-
-    // ..etc
-    // TODO copy pAssocCopy back into pAssocOrig if modified
-    free( pAssocCopy );
 }
 
 
@@ -628,9 +636,11 @@ void EditComponentFont( HWND hwnd, PCFEGLOBAL pGlobal, ULONG ulAssoc )
  * ------------------------------------------------------------------------- */
 void PopulateValues_CMB( HWND hwnd, PCFEGLOBAL pGlobal )
 {
-    PUNIFONTMETRICS pUFM;      // pointer to Uni-font metrics data
-    PFONTASSOCLIST  pNode;     // current node in font association linked list
-    PULONG          pulSig;    // pointer to metrics structure signature
+    PUNIFONTMETRICS pUFM;           // pointer to font metrics data
+//    PFONTASSOCLIST  pNode;     // current node in font association linked list
+    PASSOCIATIONDATA pAssociation;  // pointer to a component font association
+    PFONTASSOCGLYPHRANGE pRange;
+//    PULONG          pulID;          // pointer to unifm ID field
     PSZ             pszFamily,
                     pszFace;
     ULONG           ulCB,
@@ -644,8 +654,9 @@ void PopulateValues_CMB( HWND hwnd, PCFEGLOBAL pGlobal )
 
 
     pUFM   = &(pGlobal->font.combined.pMetrics->unifm);
-    pulSig = (PULONG) pUFM->Identity;
-    if (( pGlobal->font.combined.pMetrics->Identity == SIG_CBFM ) && ( *pulSig == SIG_UNFM )) {
+    if (( pGlobal->font.combined.pMetrics->Identity == SIG_CBFM ) &&
+        ( pUFM->Identity == SIG_UNFM ))
+    {
 
         // Family and face name
         pszFamily = (( pUFM->flOptions & UNIFONTMETRICS_FULLFAMILYNAME_EXIST ) &&
@@ -686,29 +697,34 @@ void PopulateValues_CMB( HWND hwnd, PCFEGLOBAL pGlobal )
         pFirst = pRec;
         ulCB = sizeof( MINIRECORDCORE );
 
-        for ( i = 0, pNode = pGlobal->font.combined.pFontList; pNode; i++ ) {
-            //pComp = pGlobal->font.combined.pComponents->CompFont + i;
+//        for ( i = 0, pNode = pGlobal->font.combined.pFontList; pNode; i++ ) {
+        for ( i = 0; i < pGlobal->font.combined.ulCmpFonts; i++ ) {
+            pAssociation = (PASSOCIATIONDATA) gl_list_at( pGlobal->font.combined.pFontList, i );
+            if ( !pAssociation ) continue;
+
             pRec->pszFace      = (PSZ) calloc( FACESIZE, 1 );
             pRec->pszRanges    = (PSZ) calloc( SZRANGES_MAXZ, 1 );
             pRec->pszGlyphList = (PSZ) calloc( GLYPHNAMESIZE, 1 );
             pRec->pszFlags     = (PSZ) calloc( SZFLAGS_MAXZ, 1 );
-            strcpy( pRec->pszFace, pNode->font.unifm.ifiMetrics.szFacename );
-            if ( pNode->font.ulGlyphRanges > 1 )
-                sprintf( pRec->pszRanges, "(%u ranges)", pNode->font.ulGlyphRanges );
-            else if ( pNode->font.ulGlyphRanges == 1 ) {
-                sprintf( pRec->pszRanges, "%u - %u",
-                         pNode->font.GlyphRange[0].giStart,
-                         pNode->font.GlyphRange[0].giEnd );
+            strcpy( pRec->pszFace, pAssociation->font.unifm.ifiMetrics.szFacename );
+            if ( pAssociation->font.ulGlyphRanges > 1 )
+                sprintf( pRec->pszRanges, "(%u ranges)", pAssociation->font.ulGlyphRanges );
+            else if ( pAssociation->font.ulGlyphRanges == 1 ) {
+                pRange = (PFONTASSOCGLYPHRANGE) gl_list_at( pAssociation->pRangeList, 0 );
+                if ( pRange )
+                    sprintf( pRec->pszRanges, "%u - %u", pRange->giStart, pRange->giEnd );
+                else
+                    strcpy( pRec->pszRanges, "(error)");
             }
             else
                 strcpy( pRec->pszRanges, "*");
-            strcpy( pRec->pszGlyphList, pNode->font.unifm.ifiMetrics.szGlyphlistName );
-            sprintf( pRec->pszFlags, "0x%X", pNode->font.flFlags );
+            strcpy( pRec->pszGlyphList, pAssociation->font.unifm.ifiMetrics.szGlyphlistName );
+            sprintf( pRec->pszFlags, "0x%X", pAssociation->font.flFlags );
             pRec->record.cb = ulCB;
             pRec->record.pszIcon = pRec->pszFace;
             pRec->ulIndex = i;
             pRec = (PCFRECORD) pRec->record.preccNextRecord;
-            pNode = pNode->pNext;
+            //pNode = pNode->pNext;
         }
         ri.cb                = sizeof( RECORDINSERT );
         ri.pRecordOrder      = (PRECORDCORE) CMA_END;
@@ -794,6 +810,116 @@ void SetupCnrCF( HWND hwnd )
 
 
 /* ------------------------------------------------------------------------- *
+ * ComponentListFree                                                         *
+ *                                                                           *
+ * Free the linked list of component font associations.  This also frees     *
+ * each association's linked list of glyph ranges, if any.                   *
+ *                                                                           *
+ * ARGUMENTS:                                                                *
+ *   PCOMBFONTFILE pCombFont: pointer to combined font data.                 *
+ *                                                                           *
+ * RETURNS: N/A                                                              *
+ * ------------------------------------------------------------------------- */
+void ComponentListFree( PCOMBFONTFILE pCombFont )
+{
+    PASSOCIATIONDATA pAssociation;
+
+    if ( pCombFont->pFontList != NULL ) {
+        do {
+            pAssociation = gl_list_pop( pCombFont->pFontList );
+            if ( pAssociation ) {
+                if ( pAssociation->pRangeList ) {
+                    GlyphRangeListFree( pAssociation );
+                    pAssociation->pRangeList = NULL;
+                }
+                free( pAssociation );
+            }
+        } while ( pAssociation );
+        gl_list_free( pCombFont->pFontList );
+    }
+    pCombFont->pFontList = NULL;
+    pCombFont->ulCmpFonts = 0;
+}
+
+
+/* ------------------------------------------------------------------------- *
+ * ComponentListInit                                                         *
+ *                                                                           *
+ * Copy the array of component font associations as parsed from a combined   *
+ * font file into a linked list which is easier for us to manage internally. *
+ *                                                                           *
+ * ARGUMENTS:                                                                *
+ *   PCOMBFONTFILE   pCombFont  : our internal combined font representation. *
+ *   PCOMPFONTHEADER pComponents: original array of components being copied. *
+ *                                                                           *
+ * RETURNS: BOOL                                                             *
+ * ------------------------------------------------------------------------- */
+BOOL ComponentListInit( PCOMBFONTFILE pCombFont, PCOMPFONTHEADER pComponents )
+{
+    PFONTASSOCIATION pFA;           // a component font item as parsed from file
+    PASSOCIATIONDATA pAssociation;  // our internal font association data
+    BOOL             bOK = FALSE;
+    ULONG            i;
+
+    if ( pCombFont->pFontList != NULL )
+         ComponentListFree( pCombFont );
+    pCombFont->pFontList = gl_list_new();
+    if ( !pCombFont->pFontList ) {
+        ErrorPopup("Failed to allocate memory for component font list.");
+        return FALSE;
+    }
+
+    for ( i = 0; i < pComponents->ulCmpFonts; i++ ) {
+        pFA = &(pComponents->CompFont[ i ].CompFontAssoc);
+        pAssociation = (PASSOCIATIONDATA) calloc( sizeof(ASSOCIATIONDATA), 1 );
+        if ( !pAssociation ) {
+            ErrorPopup("Failed to allocate memory for component font structure.");
+            break;
+        }
+        // Using sizeof(FONTASSOCIATION1) lets us skip the range array...
+        memcpy( &(pAssociation->font), pFA, sizeof(FONTASSOCIATION1) );
+
+        // ...which we handle separately here
+        if ( pAssociation->font.ulGlyphRanges ) {
+            GlyphRangeListInit( pAssociation, pFA );
+        }
+        if ( gl_list_append( pCombFont->pFontList, pAssociation )) {
+            pCombFont->ulCmpFonts++;
+            bOK = TRUE;     // at least one item was successfully saved
+        }
+    }
+
+    return bOK;
+}
+
+
+/* ------------------------------------------------------------------------- *
+ * ComponentListInsert                                                       *
+ *                                                                           *
+ * Insert a new font association into the linked list.                       *
+ *                                                                           *
+ * ARGUMENTS:                                                                *
+ *   PCOMBFONTFILE    pCombFont   :    current combined font data.           *
+ *   PASSOCIATIONDATA pAssociation: the new font association to add.         *
+ *   ULONG            ulIndex     : list index of the newly added item.      *
+ *                                                                           *
+ * RETURNS: BOOL                                                             *
+ * ------------------------------------------------------------------------- */
+BOOL ComponentListInsert( PCOMBFONTFILE pCombFont, PFONTASSOCIATION pAssociation, ULONG ulIndex )
+{
+    BOOL bOK = FALSE;
+
+    if ( pCombFont->pFontList &&
+         gl_list_insert( pCombFont->pFontList, pAssociation, ulIndex ))
+    {
+        pCombFont->ulCmpFonts++;
+        bOK = TRUE;
+    }
+    return bOK;
+}
+
+
+/* ------------------------------------------------------------------------- *
  * ComponentListDelete                                                       *
  *                                                                           *
  * Delete a font association from a combined font's linked list.             *
@@ -806,166 +932,79 @@ void SetupCnrCF( HWND hwnd )
  * ------------------------------------------------------------------------- */
 void ComponentListDelete( PCOMBFONTFILE pCombFont, ULONG ulIndex )
 {
-    PFONTASSOCLIST pNode,
-                   pTemp;
-    ULONG          i;
-
-    pNode = pCombFont->pFontList;
-    if ( pNode == NULL ) return;
-
-    if ( ulIndex == 0 ) {
-        // delete first entry
-        pCombFont->pFontList = pNode->pNext;
-        pTemp = pNode;
+    if ( pCombFont->pFontList &&
+         gl_list_delete( pCombFont->pFontList, ulIndex ))
+    {
+        pCombFont->ulCmpFonts--;
     }
-    else {
-        // delete other entry
-        for ( i = 0; pNode->pNext && ( i < ulIndex ); i++ )
-            pNode = pNode->pNext;
-        if ( i < ulIndex ) return;
-        pTemp = pNode->pNext;
-        pNode->pNext = pTemp->pNext;
-    }
-    free( pTemp );
-    pCombFont->ulCmpFonts--;
-
 }
 
 
 /* ------------------------------------------------------------------------- *
- * ComponentListFree                                                         *
+ * GlyphRangeListInit                                                        *
  *                                                                           *
- * Free the linked list of component font associations.                      *
+ * Copy the array of glyph range structures as parsed from a combined font   *
+ * association structure into an internally-managed linked list.             *
  *                                                                           *
  * ARGUMENTS:                                                                *
- *   PCOMBFONTFILE pCombFont: pointer to combined font data.                 *
+ *   PASSOCIATIONDATA pAssociation: internal font association data           *
+ *   PFONTASSOCIATION pFA         : parsed font association                  *
+ *                                                                           *
+ * RETURNS: BOOL                                                             *
+ * ------------------------------------------------------------------------- */
+BOOL GlyphRangeListInit( PASSOCIATIONDATA pAssociation, PFONTASSOCIATION pFA )
+{
+    PFONTASSOCGLYPHRANGE pRangeInternal;    // copy of the above for our internal data
+    BOOL                 bOK = FALSE;
+    ULONG                i;
+
+    if ( pAssociation->pRangeList != NULL )
+        GlyphRangeListFree( pAssociation );
+    pAssociation->pRangeList = gl_list_new();
+    if ( !pAssociation->pRangeList ) {
+        ErrorPopup("Failed to allocate memory for glyph range list.");
+        return FALSE;
+    }
+
+    pAssociation->font.ulGlyphRanges = 0;
+    for ( i = 0; i < pFA->ulGlyphRanges; i++ ) {
+        pRangeInternal = (PFONTASSOCGLYPHRANGE) malloc( sizeof(FONTASSOCGLYPHRANGE) );
+        if ( !pRangeInternal ) {
+            ErrorPopup("Failed to allocate memory for glyph range structure.");
+            break;
+        }
+        memcpy( pRangeInternal, &(pFA->GlyphRange[i]), sizeof(FONTASSOCGLYPHRANGE) );
+        if ( gl_list_append( pAssociation->pRangeList, pRangeInternal )) {
+            pAssociation->font.ulGlyphRanges++;
+            bOK = TRUE;     // at least one item was successfully saved
+        }
+    }
+    return bOK;
+}
+
+
+/* ------------------------------------------------------------------------- *
+ * GlyphRangeListFree                                                        *
+ *                                                                           *
+ * Free the linked list of glyph ranges associated with a font association.  *
+ *                                                                           *
+ * ARGUMENTS:                                                                *
+ *   PASSOCIATIONDATA pAssociation: pointer to font association data.        *
  *                                                                           *
  * RETURNS: N/A                                                              *
  * ------------------------------------------------------------------------- */
-void ComponentListFree( PCOMBFONTFILE pCombFont )
+void GlyphRangeListFree( PASSOCIATIONDATA pAssociation )
 {
-    PFONTASSOCLIST pNode,
-                   pTemp;
+    PFONTASSOCGLYPHRANGE pRange;
 
-    pNode = pCombFont->pFontList;
-    while ( pNode ) {
-        pTemp = pNode;
-        pNode = pNode->pNext;
-        free( pTemp );
+    if ( pAssociation->pRangeList != NULL ) {
+        do {
+            pRange = (PFONTASSOCGLYPHRANGE) gl_list_pop( pAssociation->pRangeList );
+            wrap_free( (PPVOID) &pRange );
+        } while ( pRange );
+        gl_list_free( pAssociation->pRangeList );
     }
-    pCombFont->pFontList = NULL;
-    pCombFont->ulCmpFonts = 0;
+    pAssociation->font.ulGlyphRanges = 0;
 }
-
-
-/* ------------------------------------------------------------------------- *
- * ComponentListInit                                                         *
- *                                                                           *
- * Copy the array of component font associations from a parsed combined font *
- * file into a linked list which is easier for us to modify as needed.       *
- *                                                                           *
- * ARGUMENTS:                                                                *
- *   PCOMBFONTFILE   pCombFont  : pointer to combined font data.             *
- *   PCOMPFONTHEADER pComponents: original array of components being copied. *
- *                                                                           *
- * RETURNS: BOOL                                                             *
- * ------------------------------------------------------------------------- */
-BOOL ComponentListInit( PCOMBFONTFILE pCombFont, PCOMPFONTHEADER pComponents )
-{
-    PFONTASSOCIATION pFA;
-    PFONTASSOCLIST   pNode,
-                     pNew;
-    ULONG            cbFA,
-                     i;
-
-
-    if ( !pComponents->ulCmpFonts ) return FALSE;
-
-    pFA  = &(pComponents->CompFont[ 0 ].CompFontAssoc);
-    cbFA = sizeof( FONTASSOCIATION ) +
-           ( pFA->ulGlyphRanges * sizeof( FONTASSOCGLYPHRANGE )) -
-           sizeof( FONTASSOCGLYPHRANGE );
-    if (( pNode = (PFONTASSOCLIST) malloc( cbFA )) == NULL ) {
-        ErrorPopup("Failed to allocate memory for component font structure.");
-        return FALSE;
-    }
-    memcpy( &(pNode->font), pFA, cbFA );
-
-    pCombFont->pFontList = pNode;
-
-    for ( i = 1; i < pComponents->ulCmpFonts; i++ ) {
-        pFA  = &(pComponents->CompFont[ i ].CompFontAssoc);
-        cbFA = sizeof( FONTASSOCIATION )
-                + ( pFA->ulGlyphRanges * sizeof( FONTASSOCGLYPHRANGE ))
-                - sizeof( FONTASSOCGLYPHRANGE );
-        if (( pNew = (PFONTASSOCLIST) malloc( cbFA )) == NULL ) {
-            ErrorPopup("Failed to allocate memory for component font structure.");
-            pCombFont->ulCmpFonts = i - 1;
-            return FALSE;
-        }
-        pNode->pNext = pNew;
-        pNew->pNext  = NULL;
-        memcpy( &(pNew->font), pFA, cbFA );
-        pNode = pNew;
-    }
-
-    pCombFont->ulCmpFonts = pComponents->ulCmpFonts;
-    return TRUE;
-}
-
-
-/* ------------------------------------------------------------------------- *
- * ComponentListInsert                                                       *
- *                                                                           *
- * Insert a new font association into the linked list.                       *
- *                                                                           *
- * ARGUMENTS:                                                                *
- *   PFONTASSOCIATION pCompFont: the new font association to add.            *
- *   ULONG            ulIndex  : list index of the newly added item.         *
- *                                                                           *
- * RETURNS: BOOL                                                             *
- * ------------------------------------------------------------------------- */
-BOOL ComponentListInsert( PCOMBFONTFILE pCombFont, PFONTASSOCIATION pCompFont, ULONG ulIndex )
-{
-    PFONTASSOCLIST  pNode,
-                    pNew;
-    ULONG           cb,
-                    i;
-
-    cb = sizeof( FONTASSOCIATION )
-          + ( pCompFont->ulGlyphRanges * sizeof( FONTASSOCGLYPHRANGE ))
-          - sizeof( FONTASSOCGLYPHRANGE );
-    if (( pNew = (PFONTASSOCLIST) malloc( cb )) == NULL ) {
-        ErrorPopup("Failed to allocate memory for component font structure.");
-        return FALSE;
-    }
-    memcpy( &(pNew->font), pCompFont, cb );
-
-    pCombFont->ulCmpFonts++;
-
-    // empty list
-    if ( pCombFont->pFontList == NULL ) {
-        pNew->pNext = NULL;
-        pCombFont->pFontList = pNew;
-        return TRUE;
-    }
-
-    // existing list, new first entry
-    pNode = pCombFont->pFontList;
-    if ( ulIndex == 0 ) {
-        pNew->pNext = pNode;
-        pCombFont->pFontList = pNew;
-        return TRUE;
-    }
-
-    // existing list, other entry
-    for ( i = 0; pNode->pNext && ( i < ulIndex ); i++ )
-        pNode = pNode->pNext;
-    pNew->pNext = pNode->pNext;
-    pNode->pNext = pNew;
-
-    return TRUE;
-}
-
 
 

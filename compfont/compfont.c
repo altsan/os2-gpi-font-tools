@@ -30,7 +30,8 @@
 
 #include "ids.h"
 #include "cmbfont.h"                        // includes unifont.h
-#include "gpifont.h"
+#include "gpifont.h"                        // for GENERICRECORD
+#include "gllist.h"                         // generic linked list
 #include "compfont.h"
 
 
@@ -667,6 +668,13 @@ void CloseFontFile( HWND hwnd, PCFEGLOBAL pGlobal )
             break;
 
         case FONT_TYPE_PCR:
+            wrap_free( (PPVOID) &(pGlobal->font.pcr.pSignature) );
+            wrap_free( (PPVOID) &(pGlobal->font.pcr.pSourceAssoc) );
+            wrap_free( (PPVOID) &(pGlobal->font.pcr.pTargetHeader) );
+            wrap_free( (PPVOID) &(pGlobal->font.pcr.pEnd) );
+            //ComponentListFree_PCR( &(pGlobal->font.pcr) );
+            break;
+
         case FONT_TYPE_UFF:
         default:
              break;
@@ -1050,7 +1058,7 @@ MRESULT EXPENTRY ImportDlgProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2 )
  *                                                                           *
  * Populate the metric flags container on the font properties dialog.        *
  * ------------------------------------------------------------------------- */
-void PopulateMetricFlags( HWND hwndCnr, PFONTASSOCIATION pFA )
+void PopulateMetricFlags( HWND hwndCnr, PFONTASSOCIATION1 pFA )
 {
     ULONG        ulCB;
     USHORT       i;
